@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { api } from "@/api/real";
+import { mockApi as api } from "@/api/mock";
 import { useAuth } from "@/context/AuthContext";
-import type { Test, TestAnswer } from "@/types/index";
+import type { Test } from "@/types/index";
+import type { TestWithAccess, UserWithAccessList } from "@/api/real/types";
 import {
   BookOpen,
   Users,
@@ -20,46 +21,84 @@ import {
 
 const TeacherPortal: React.FC = () => {
   const { user } = useAuth();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [recentResults, setRecentResults] = useState<TestAnswer[]>([]);
+  const [tests, setTests] = useState<TestWithAccess[]>([]);
+  const [users, setUsers] = useState<UserWithAccessList[]>([]);
   const [stats, setStats] = useState({
     totalTests: 0,
-    activeTests: 0,
+    premiumTests: 0,
     totalStudents: 0,
     averageScore: 0,
   });
 
   useEffect(() => {
-    if (user) {
-      const teacherId = user.id;
-      api.teacher.getTests(teacherId).then((tests) => {
-        setTests(tests);
-        setStats((prev) => ({
-          ...prev,
-          totalTests: tests.length,
-          activeTests: tests.length,
-        })); // Simplified
-      });
+    // For now, we'll simulate data since the API isn't fully implemented
+    const mockTests: TestWithAccess[] = [
+      {
+        testId: "1",
+        nomi: "SAT Math Practice Test 1",
+        subject: "mathematics",
+        questionCount: 58,
+        isPremium: false,
+        hasAccess: true,
+        jami_urinishlar: 120,
+        average: 750.5
+      },
+      {
+        testId: "2",
+        nomi: "SAT Reading Practice Test 1",
+        subject: "reading",
+        questionCount: 52,
+        isPremium: false,
+        hasAccess: true,
+        jami_urinishlar: 95,
+        average: 680.0
+      },
+      {
+        testId: "3",
+        nomi: "Advanced SAT Math Test",
+        subject: "mathematics",
+        questionCount: 58,
+        isPremium: true,
+        hasAccess: false,
+        jami_urinishlar: 15,
+        average: 720.0
+      }
+    ];
 
-      // In a real app, you would fetch all results for all tests by the teacher.
-      // For this simulation, we will just fetch all test answers.
-      Promise.all(
-        tests.map((test) => api.teacher.getTestResults(test.id)),
-      ).then((results) => {
-        setRecentResults(results.flat().slice(0, 5));
-      });
+    const mockUsers: UserWithAccessList[] = [
+      {
+        id: "1",
+        full_name: "John Doe",
+        email: "john@example.com",
+        access_list: ["1"]
+      },
+      {
+        id: "2",
+        full_name: "Jane Smith",
+        email: "jane@example.com",
+        access_list: ["1", "2"]
+      },
+      {
+        id: "3",
+        full_name: "Bob Johnson",
+        email: "bob@example.com",
+        access_list: []
+      }
+    ];
 
-      // Get student count
-      const studentIds = new Set<string>();
-      tests.forEach(() => {
-        // This is a placeholder. In a real app, you would have a better way to get assigned students.
-      });
-      setStats((prev) => ({ ...prev, totalStudents: studentIds.size }));
-    }
-  }, [user, tests]);
+    setTests(mockTests);
+    setUsers(mockUsers);
+
+    setStats({
+      totalTests: mockTests.length,
+      premiumTests: mockTests.filter(t => t.isPremium).length,
+      totalStudents: mockUsers.length,
+      averageScore: Math.round(mockTests.reduce((sum, test) => sum + test.average, 0) / mockTests.length) || 0
+    });
+  }, [user]);
 
   return (
-    <div className="container mx-auto p-4 ">
+    <div className="container mx-auto p-4">
       <div className="flex h-full w-full flex-col gap-8">
         {/* Welcome Header */}
         <div
@@ -69,10 +108,9 @@ const TeacherPortal: React.FC = () => {
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Teacher Dashboard</h1>
+              <h1 className="text-3xl font-bold">SAT Teacher Dashboard</h1>
               <p className="mt-2 opacity-90">
-                Welcome back! Here's what's happening with your tests and
-                students.
+                Manage your SAT tests and student access. Track performance and engagement.
               </p>
             </div>
 
@@ -84,9 +122,9 @@ const TeacherPortal: React.FC = () => {
                 className="w-full md:w-auto bg-white text-black hover:bg-gray-200
                            dark:bg-black dark:text-white dark:hover:bg-gray-800"
               >
-                <Link to="/teacher/tests">
+                <Link to="/admin/tests">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Test
+                  Create SAT Test
                 </Link>
               </Button>
             </div>
@@ -94,7 +132,7 @@ const TeacherPortal: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Tests</CardTitle>
@@ -102,20 +140,20 @@ const TeacherPortal: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalTests}</div>
-              <p className="text-xs text-muted-foreground">All tests</p>
+              <p className="text-xs text-muted-foreground">All SAT tests</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Active Tests
+                Premium Tests
               </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.activeTests}</div>
-              <p className="text-xs text-muted-foreground">Currently active</p>
+              <div className="text-2xl font-bold">{stats.premiumTests}</div>
+              <p className="text-xs text-muted-foreground">Premium content</p>
             </CardContent>
           </Card>
 
@@ -135,14 +173,14 @@ const TeacherPortal: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Average Score
+                Avg. Score
               </CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.averageScore}%</div>
+              <div className="text-2xl font-bold">{stats.averageScore}</div>
               <p className="text-xs text-muted-foreground">
-                Overall performance
+                SAT score average
               </p>
             </CardContent>
           </Card>
@@ -155,12 +193,12 @@ const TeacherPortal: React.FC = () => {
             <Card>
               <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <CardTitle className="flex items-center space-x-2 ">
+                  <CardTitle className="flex items-center space-x-2">
                     <BookOpen className="h-5 w-5" />
-                    <span>Recent Tests</span>
+                    <span>Recent SAT Tests</span>
                   </CardTitle>
                   <Button variant="default" size="sm" asChild>
-                    <Link to="/teacher/tests">View All</Link>
+                    <Link to="/admin/tests">View All</Link>
                   </Button>
                 </div>
               </CardHeader>
@@ -168,17 +206,27 @@ const TeacherPortal: React.FC = () => {
                 <div className="space-y-4">
                   {tests.slice(0, 3).map((test) => (
                     <div
-                      key={test.id}
+                      key={test.testId}
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border hover:shadow-sm transition-shadow"
                     >
                       {/* Test Info */}
                       <div className="flex-1">
                         <div className="flex items-start sm:items-center space-x-3">
                           <div>
-                            <h4 className="font-medium">{test.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {test.questions.length} questions
-                            </p>
+                            <h4 className="font-medium">{test.nomi}</h4>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                              <span>{test.subject}</span>
+                              <span>•</span>
+                              <span>{test.questionCount} questions</span>
+                              {test.isPremium && (
+                                <>
+                                  <span>•</span>
+                                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">
+                                    Premium
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -196,64 +244,75 @@ const TeacherPortal: React.FC = () => {
             </Card>
           </div>
 
-          {/* Recent Activity */}
+          {/* Student Access Summary */}
           <div>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Activity className="h-5 w-5" />
-                  <span>Recent Activity</span>
+                  <Users className="h-5 w-5" />
+                  <span>Student Access</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Placeholder for recent activity */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Students with access</span>
+                    <span className="text-sm font-medium">
+                      {users.filter(u => u.access_list.length > 0).length}/{users.length}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(users.filter(u => u.access_list.length > 0).length / users.length) * 100}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    {Math.round((users.filter(u => u.access_list.length > 0).length / users.length) * 100)}% of students have test access
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Recent Test Results */}
+        {/* Recent Activity */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5" />
-              <span>Recent Test Results</span>
+              <Activity className="h-5 w-5" />
+              <span>Recent Activity</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-3 rounded-lg border"
-                >
-                  {/* Student Info */}
-                  <div className="flex items-center space-x-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <span className="text-sm font-medium">
-                        {/* Placeholder for student name */}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="font-medium">{result.studentId}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {result.answers.length} correct •{" "}
-                        {new Date(result.submittedAt).toLocaleDateString()}
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg border">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">New SAT Test Created</div>
+                    <div className="text-sm text-muted-foreground">Math Practice Test 1</div>
                   </div>
-
-                  {/* Result Info */}
-                  <div className="flex items-center space-x-3 sm:self-auto self-start">
-                    <div className="text-left sm:text-right">
-                      <div className="font-bold text-lg">{result.score}%</div>
-                    </div>
-                    <Progress value={result.score} className="w-24 sm:w-20" />
-                  </div>
+                  <div className="text-sm text-muted-foreground">2 hours ago</div>
                 </div>
-              ))}
+              </div>
+
+              <div className="p-3 rounded-lg border">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">Access Granted</div>
+                    <div className="text-sm text-muted-foreground">To John Doe for Advanced SAT Math</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">5 hours ago</div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg border">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">Test Completed</div>
+                    <div className="text-sm text-muted-foreground">Jane Smith scored 1340</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">1 day ago</div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

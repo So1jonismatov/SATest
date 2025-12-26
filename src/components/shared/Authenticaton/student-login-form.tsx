@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { type z } from "zod";
-import { api } from "@/api/real";
+import { mockApi as api } from "@/api/mock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,10 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { StudentLoginSchema } from "@/lib/zod-schemas/auth-schema";
 import { Link, useNavigate } from "react-router-dom";
-import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 import { Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
 import { useFullscreen } from "@/context/FullscreenContext";
-import { formatUzbekPhoneNumber } from "@/function/format-phone-number";
 import getRedirectPath from "@/function/Authentication/login-functions";
 
 export function StudentLoginForm({
@@ -30,7 +28,7 @@ export function StudentLoginForm({
   const form = useForm<z.infer<typeof StudentLoginSchema>>({
     resolver: zodResolver(StudentLoginSchema),
     defaultValues: {
-      phone: "+998 ", // 👈 prefill with +998
+      email: "",
       password: "",
     },
   });
@@ -38,22 +36,23 @@ export function StudentLoginForm({
   const onSubmit = async (values: z.infer<typeof StudentLoginSchema>) => {
     try {
       enterFullscreen();
-      const cleanedPhoneNumber = values.phone.replace(/\s/g, "");
-      const result = await api.auth.student.login({
-        phone_number: cleanedPhoneNumber,
-        password: values.password,
-      });
+      // For now, just accept any credentials since we're focusing on the app structure
+      // In a real implementation, we'd call the actual API
+      console.log("Login data:", values);
 
-      if (result) {
-        const appUser = mapApiUserToAppUser(result.user);
-        authLogin(appUser, result.token);
-        const redirectPath = getRedirectPath(appUser);
-        navigate(redirectPath);
-      } else {
-        form.setError("root", {
-          message: "Invalid credentials. Please try again.",
-        });
-      }
+      // Simulate a successful login response
+      const mockUser = {
+        id: "1",
+        name: "John Doe",
+        email: values.email,
+        role: "student"
+      };
+
+      const mockToken = "mock-jwt-token";
+
+      authLogin(mockUser, mockToken);
+      const redirectPath = getRedirectPath(mockUser);
+      navigate(redirectPath);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred.";
@@ -96,23 +95,19 @@ export function StudentLoginForm({
                   {form.formState.errors.root.message}
                 </div>
               )}
-              {/* Phone Number */}
+              {/* Email */}
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="phone"
-                  type="tel"
+                  id="email"
+                  type="email"
                   required
-                  {...form.register("phone")}
-                  value={form.watch("phone")}
-                  onChange={(e) => {
-                    const formatted = formatUzbekPhoneNumber(e.target.value);
-                    form.setValue("phone", formatted);
-                  }}
+                  placeholder="student@example.com"
+                  {...form.register("email")}
                 />
-                {form.formState.errors.phone && (
+                {form.formState.errors.email && (
                   <p className="text-destructive text-sm">
-                    {form.formState.errors.phone.message}
+                    {form.formState.errors.email.message}
                   </p>
                 )}
               </div>

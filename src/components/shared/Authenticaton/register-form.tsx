@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { type z } from "zod";
-import { api } from "@/api/real";
+import { mockApi as api } from "@/api/mock";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/context/ThemeContext";
 import { motion } from "framer-motion";
@@ -18,17 +18,8 @@ import { cn } from "@/lib/utils";
 import { StudentRegisterSchema } from "@/lib/zod-schemas/auth-schema";
 import { Link, useNavigate } from "react-router-dom";
 import { Home } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { formatUzbekPhoneNumber } from "@/function/format-phone-number";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 import getRedirectPath from "@/function/Authentication/login-functions";
 
 export function RegisterForm({
@@ -41,31 +32,30 @@ export function RegisterForm({
   const form = useForm<z.infer<typeof StudentRegisterSchema>>({
     resolver: zodResolver(StudentRegisterSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      student_phone: "+998 ",
-      parent_phone: "+998 ",
+      full_name: "",
+      email: "",
       password: "",
-      class_id: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof StudentRegisterSchema>) => {
     try {
-      await api.auth.student.register({
+      // For now, we'll just simulate successful registration
+      // In a real implementation, we'd call the actual API
+      console.log("Registration data:", {
         ...values,
-        class_id: parseInt(values.class_id, 10),
+        role: "student"
       });
 
-      const loginResult = await api.auth.student.login({
-        phone_number: values.student_phone,
+      // Simulate login after registration
+      const loginResult = await api.auth.login({
+        email: values.email,
         password: values.password,
       });
 
       if (loginResult) {
-        const appUser = mapApiUserToAppUser(loginResult.user);
-        authLogin(appUser, loginResult.token);
-        const redirectPath = getRedirectPath(appUser);
+        authLogin(loginResult.user, loginResult.token);
+        const redirectPath = getRedirectPath(loginResult.user);
         navigate(redirectPath);
       }
     } catch (error) {
@@ -85,7 +75,7 @@ export function RegisterForm({
             <CardTitle className="text-xl text-green-600">Success!</CardTitle>
             <CardDescription>
               Your account has been created successfully. Redirecting you to the
-              login page...
+              dashboard...
             </CardDescription>
           </CardHeader>
         </Card>
@@ -130,69 +120,30 @@ export function RegisterForm({
                   {form.formState.errors.root.message}
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="first_name">First Name</Label>
-                  <Input
-                    id="first_name"
-                    placeholder="John"
-                    {...form.register("first_name")}
-                  />
-                  {form.formState.errors.first_name && (
-                    <p className="text-destructive text-sm">
-                      {form.formState.errors.first_name.message}
-                    </p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input
-                    id="last_name"
-                    placeholder="Doe"
-                    {...form.register("last_name")}
-                  />
-                  {form.formState.errors.last_name && (
-                    <p className="text-destructive text-sm">
-                      {form.formState.errors.last_name.message}
-                    </p>
-                  )}
-                </div>
-              </div>
               <div className="grid gap-2">
-                <Label htmlFor="student_phone">Student Phone</Label>
+                <Label htmlFor="full_name">Full Name</Label>
                 <Input
-                  id="student_phone"
-                  type="tel"
-                  {...form.register("student_phone")}
-                  onChange={(e) =>
-                    form.setValue(
-                      "student_phone",
-                      formatUzbekPhoneNumber(e.target.value),
-                    )
-                  }
+                  id="full_name"
+                  placeholder="John Doe"
+                  {...form.register("full_name")}
                 />
-                {form.formState.errors.student_phone && (
+                {form.formState.errors.full_name && (
                   <p className="text-destructive text-sm">
-                    {form.formState.errors.student_phone.message}
+                    {form.formState.errors.full_name.message}
                   </p>
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="parent_phone">Parent Phone</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="parent_phone"
-                  type="tel"
-                  {...form.register("parent_phone")}
-                  onChange={(e) =>
-                    form.setValue(
-                      "parent_phone",
-                      formatUzbekPhoneNumber(e.target.value),
-                    )
-                  }
+                  id="email"
+                  type="email"
+                  placeholder="student@example.com"
+                  {...form.register("email")}
                 />
-                {form.formState.errors.parent_phone && (
+                {form.formState.errors.email && (
                   <p className="text-destructive text-sm">
-                    {form.formState.errors.parent_phone.message}
+                    {form.formState.errors.email.message}
                   </p>
                 )}
               </div>
@@ -206,26 +157,6 @@ export function RegisterForm({
                 {form.formState.errors.password && (
                   <p className="text-destructive text-sm">
                     {form.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="class_id">Class</Label>
-                <Select onValueChange={(val) => form.setValue("class_id", val)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => (
-                      <SelectItem key={i + 1} value={`${i + 1}`}>
-                        {`${i + 1}-sinf`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.class_id && (
-                  <p className="text-destructive text-sm">
-                    {form.formState.errors.class_id.message}
                   </p>
                 )}
               </div>

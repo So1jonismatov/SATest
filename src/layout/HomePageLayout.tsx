@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { LazyFooter, LazyHeader } from "@/components";
+import { LazyHeader } from "@/components";
 
 const HomePageLayout = () => {
   return (
@@ -11,13 +11,12 @@ const HomePageLayout = () => {
         </div>
       }
     >
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen h-screen">
         <LazyHeader />
 
-        <main>
+        <main className="flex-1 pt-20">
           <Outlet />
         </main>
-        <LazyFooter />
       </div>
     </Suspense>
   );

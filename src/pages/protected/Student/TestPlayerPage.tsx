@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { type Test } from "@/types";
 import { TestPlayer } from "@/components/shared/student-testing/TestPlayer";
-import { api } from "@/api/real";
+import { mockApi as api } from "@/api/mock";
 import { useAuth } from "@/context/AuthContext";
 
 const TestPlayerPage = () => {
@@ -21,12 +21,10 @@ const TestPlayerPage = () => {
     answers: { questionId: string; answeredId: string }[],
   ) => {
     if (testId && user) {
-      const result = await api.student.submitTest({
-        studentId: user.id,
-        testId: testId,
-        answers: answers,
-      });
-      navigate(`/student/result/${testId}`, {
+      // Calculate score - this is a simplified version
+      const score = answers.length > 0 ? Math.floor(Math.random() * 100) : 0; // Mock score
+      const result = await api.student.submitTest(testId, { score });
+      navigate(`/result/${testId}`, {
         replace: true,
         state: { result },
       });

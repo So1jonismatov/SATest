@@ -38,7 +38,7 @@ const UpcomingTestsCard = () => {
                     </div>
                   </div>
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/student/testing/${test.id}`}>Start Test</Link>
+                    <Link to={`/test/${test.id}`}>Start Test</Link>
                   </Button>
                 </li>
               ))}

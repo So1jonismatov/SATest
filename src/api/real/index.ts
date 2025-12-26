@@ -2,13 +2,16 @@ import { getCookie, eraseCookie } from "@/function/cookies";
 import type {
   StudentRegisterData,
   StudentLoginData,
-  ParentRegisterData,
-  ParentLoginData,
   TeacherRegisterData,
   TeacherLoginData,
-  AdminLoginData,
-  AdminRegisterData,
   AuthResponse,
+  Test,
+  TestWithAccess,
+  TestSubmission,
+  UserAccess,
+  User,
+  PaginatedTests,
+  PaginatedUsers
 } from "./types";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -107,127 +110,59 @@ async function del<T>(url: string): Promise<T> {
 
 // -------------------- Auth APIs --------------------
 
-const studentAuthAPI = {
+const authAPI = {
   register: (data: StudentRegisterData) =>
-    post<AuthResponse>("student/register", data),
+    post<AuthResponse>("/auth/register", data),
   login: (data: StudentLoginData) =>
-    post<any>("student/login", data).then((response) => {
-      const authResponse: AuthResponse = {
-        user: response.data.user,
-        token: response.data.token,
-      };
-      return authResponse;
-    }),
-};
-
-const parentAuthAPI = {
-  register: (data: ParentRegisterData) =>
-    post<AuthResponse>("parent/register", data),
-  login: (data: ParentLoginData) =>
-    post<any>("parent/login", data).then((response) => {
-      const authResponse: AuthResponse = {
-        user: response.data.user,
-        token: response.data.token,
-      };
-      return authResponse;
-    }),
-};
-
-const teacherAuthAPI = {
-  register: (data: TeacherRegisterData) =>
-    post<AuthResponse>("create-teacher", data),
-  login: (data: TeacherLoginData) =>
-    post<any>("teacher/login", data).then((response) => {
-      const authResponse: AuthResponse = {
-        user: response.teacher,
-        token: response.token,
-      };
-      return authResponse;
-    }),
-};
-
-const adminAuthAPI = {
-  register: (data: AdminRegisterData) => post<AuthResponse>("admin", data),
-  login: (data: AdminLoginData) =>
-    post<any>("admin/login", data).then((response) => {
-      const authResponse: AuthResponse = {
-        user: response.admin,
-        token: response.token,
-      };
-      return authResponse;
-    }),
-};
-
-// -------------------- Teacher APIs --------------------
-
-const teacherAPI = {
-  getTests: (teacherId: string) => get<any[]>(`/teacher/${teacherId}/tests`),
-  getTest: (testId: string) => get<any>(`/teacher/tests/${testId}`), // ✅ added
-  createTest: (test: any) => post<any>("/teacher/tests", test),
-  deleteTest: (testId: string) => del<any>(`/teacher/tests/${testId}`),
-  getTestResults: (testId: string) =>
-    get<any[]>(`/teacher/tests/${testId}/results`),
-};
-
-// -------------------- Admin APIs --------------------
-
-const adminAPI = {
-  getUsers: () => get<any[]>("/admin/users"),
-  updateUser: (userId: string, data: any) =>
-    post<any>(`/admin/users/${userId}`, data),
-  createUser: (data: any) => post<any>("/admin/users", data),
-  deleteUser: (userId: string) => del<any>(`/admin/users/${userId}`),
-  assignTeacherToStudent: (teacherId: string, studentId: string) =>
-    post<any>(`/admin/assign/teacher-to-student`, { teacherId, studentId }),
-  assignParentToStudent: (parentId: string, studentId: string) =>
-    post<any>(`/admin/assign/parent-to-student`, { parentId, studentId }),
+    post<AuthResponse>("/auth/login", data),
+  logout: () => {
+    eraseCookie("authToken");
+  },
+  getCurrentUser: () => {
+    const token = getAuthToken();
+    if (!token) return null;
+    const user = parseJwt(token);
+    return { token, user };
+  },
 };
 
 // -------------------- Student APIs --------------------
 
 const studentAPI = {
-  getAssignedTests: (studentId: string) =>
-    get<any[]>(`/student/${studentId}/tests`),
-  getTest: (testId: string) => get<any>(`/student/tests/${testId}`),
-  submitTest: (submission: any) =>
-    post<any>("/student/submit-test", submission),
+  getTests: (params?: { page?: number; limit?: number; subject?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.subject) queryParams.append('subject', params.subject);
+
+    return get<PaginatedTests>(`/tests?${queryParams.toString()}`);
+  },
+  getTest: (testId: string) => get<Test>(`/tests/${testId}`),
+  submitTest: (testId: string, submission: TestSubmission) =>
+    post<any>(`/tests/${testId}/submit`, submission),
 };
 
-// -------------------- Parent APIs --------------------
+// -------------------- Teacher/Admin APIs --------------------
 
-const parentAPI = {
-  getMe: () => get<any>("parent/me"),
-  getChildren: () => get<any>("parent/student"),
-  getStudentTests: (phoneNumber: string) =>
-    get<any>(`parent/student/tests/?phone_number=${phoneNumber}`),
-  getStudentTestDetails: (phoneNumber: string, testId: number) =>
-    get<any>(
-      `parent/student/test/detailed?phone_number=${phoneNumber}&test_id=${testId}`,
-    ),
-  getChildTestResults: (childId: string) =>
-    get<any[]>(`/parent/student/${childId}/results`),
+const teacherAPI = {
+  createTest: (testData: any) => post<Test>("/tests", testData),
+  grantAccess: (accessData: UserAccess) => post<any>("/admin/access", accessData),
+  revokeAccess: (accessData: UserAccess) => del<any>("/admin/access", accessData),
+  getUser: (userId: string) => get<User>(`/admin/users/${userId}`),
+  getUsers: (params?: { page?: number; limit?: number; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+
+    return get<PaginatedUsers>(`/admin/users?${queryParams.toString()}`);
+  },
 };
 
 // -------------------- API Export --------------------
 
 export const api = {
-  auth: {
-    student: studentAuthAPI,
-    parent: parentAuthAPI,
-    teacher: teacherAuthAPI,
-    admin: adminAuthAPI,
-    logout: () => {
-      eraseCookie("authToken");
-    },
-    getCurrentUser: () => {
-      const token = getAuthToken();
-      if (!token) return null;
-      const user = parseJwt(token);
-      return { token, user };
-    },
-  },
-  parent: parentAPI,
-  teacher: teacherAPI,
-  admin: adminAPI,
+  auth: authAPI,
   student: studentAPI,
+  teacher: teacherAPI,
 };

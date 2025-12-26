@@ -13,7 +13,7 @@ const TestResultPage = () => {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-lg text-muted-foreground">No result data found.</p>
         <Button asChild variant="link" className="mt-4">
-          <Link to="/student/dashboard">Go to Dashboard</Link>
+          <Link to="/">Go to Dashboard</Link>
         </Button>
       </div>
     );
@@ -33,7 +33,7 @@ const TestResultPage = () => {
             questions correctly.
           </p>
           <Button asChild className="mt-8">
-            <Link to="/student/dashboard">Back to Dashboard</Link>
+            <Link to="/">Back to Dashboard</Link>
           </Button>
         </CardContent>
       </Card>

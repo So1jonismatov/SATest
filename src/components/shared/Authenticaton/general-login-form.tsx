@@ -1,25 +1,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { type z } from "zod";
-import { api } from "@/api/real";
+import { mockApi as api } from "@/api/mock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { GeneralLoginSchema } from "@/lib/zod-schemas/auth-schema";
+import { TeacherLoginSchema } from "@/lib/zod-schemas/auth-schema";
 import { Link, useNavigate } from "react-router-dom";
-import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 import { Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
-import { useEffect } from "react";
-import { formatUzbekPhoneNumber } from "@/function/format-phone-number";
 import getRedirectPath from "@/function/Authentication/login-functions";
 
 interface GeneralLoginFormProps extends React.ComponentProps<"div"> {
-  role: "teacher" | "admin" | "parent";
+  role: "teacher";
 }
 
 export function GeneralLoginForm({
@@ -31,54 +28,33 @@ export function GeneralLoginForm({
   const { login: authLogin } = useAuth();
   const { theme } = useTheme();
 
-  const form = useForm<z.infer<typeof GeneralLoginSchema>>({
-    resolver: zodResolver(GeneralLoginSchema),
+  const form = useForm<z.infer<typeof TeacherLoginSchema>>({
+    resolver: zodResolver(TeacherLoginSchema),
     defaultValues: {
-      phone: "+998 ", // 👈 initial value
+      email: "",
       password: "",
     },
   });
 
-  // auto-format phone number on change
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "phone" && value.phone !== undefined) {
-        const formatted = formatUzbekPhoneNumber(value.phone);
-        if (formatted !== value.phone) {
-          form.setValue("phone", formatted, { shouldValidate: true });
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const onSubmit = async (values: z.infer<typeof GeneralLoginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof TeacherLoginSchema>) => {
     try {
-      let result;
-      const cleanedPhoneNumber = values.phone.replace(/\s/g, "");
+      // For now, just accept any credentials since we're focusing on the app structure
+      // In a real implementation, we'd call the actual API
+      console.log("Login data:", values);
 
-      if (role === "parent") {
-        result = await api.auth.parent.login({
-          parent_phone: cleanedPhoneNumber,
-          password: values.password,
-        });
-      } else {
-        result = await api.auth[role].login({
-          phone_number: cleanedPhoneNumber,
-          password: values.password,
-        });
-      }
+      // Simulate a successful login response
+      const mockUser = {
+        id: "2",
+        name: "Teacher Name",
+        email: values.email,
+        role: "teacher"
+      };
 
-      if (result) {
-        const appUser = mapApiUserToAppUser(result.user);
-        authLogin(appUser, result.token);
-        const redirectPath = getRedirectPath(appUser);
-        navigate(redirectPath);
-      } else {
-        form.setError("root", {
-          message: "Invalid credentials. Please try again.",
-        });
-      }
+      const mockToken = "mock-jwt-token";
+
+      authLogin(mockUser, mockToken);
+      const redirectPath = getRedirectPath(mockUser);
+      navigate(redirectPath);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred.";
@@ -125,19 +101,19 @@ export function GeneralLoginForm({
                   {form.formState.errors.root.message}
                 </div>
               )}
-              {/* Phone */}
+              {/* Email */}
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+998 99 123 45 67"
+                  id="email"
+                  type="email"
+                  placeholder="teacher@example.com"
                   required
-                  {...form.register("phone")}
+                  {...form.register("email")}
                 />
-                {form.formState.errors.phone && (
+                {form.formState.errors.email && (
                   <p className="text-destructive text-sm">
-                    {form.formState.errors.phone.message}
+                    {form.formState.errors.email.message}
                   </p>
                 )}
               </div>

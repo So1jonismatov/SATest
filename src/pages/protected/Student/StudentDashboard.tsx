@@ -1,52 +1,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { FileText, Trophy, Target } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { api } from "@/api/real";
-import { type Test, type TestAnswer } from "@/types";
-import { ScoreHistoryChart } from "@/components/shared/student-dashboard/ScoreHistoryChart";
+import { FileText, Trophy, Target, BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { mockApi as api } from "@/api/mock";
+import { type TestWithAccess } from "@/api/real/types";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const StudentDashboard = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const { theme } = useTheme();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [allTestResults, setAllTestResults] = useState<TestAnswer[]>([]);
+  const [tests, setTests] = useState<TestWithAccess[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && user.role === "student") {
-      const studentId = user.id;
+    const fetchTests = async () => {
+      try {
+        const response = await api.student.getTests();
+        setTests(response.tests);
+      } catch (error) {
+        console.error("Error fetching tests:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      api.student.getAssignedTests(studentId).then(setTests);
-
-      api.parent.getChildTestResults(studentId).then(setAllTestResults);
-    }
-  }, [user, token]);
-
-  const recentResults = useMemo(() => {
-    return allTestResults
-      .sort(
-        (a, b) =>
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-      )
-      .slice(0, 3);
-  }, [allTestResults]);
-
-  const averageScore =
-    allTestResults.length > 0
-      ? Math.round(
-          allTestResults.reduce((sum, result) => sum + result.score, 0) /
-            allTestResults.length,
-        )
-      : 0;
-
-  const chartData = useMemo(() => {
-    const testMap = new Map(tests.map((test) => [test.id, test.title]));
-    return allTestResults.map((result) => ({
-      name: testMap.get(result.testId) || `Test ${result.testId.slice(-4)}`,
-      score: result.score,
-    }));
-  }, [allTestResults, tests]);
+    fetchTests();
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -57,13 +38,13 @@ const StudentDashboard = () => {
             theme === "dark" ? "bg-white text-black" : "bg-gray-900 text-white"
           }`}
         >
-          <h1 className="text-3xl font-bold">Welcome back, {user?.name}!</h1>
+          <h1 className="text-3xl font-bold">Welcome Stranger !</h1>
           <p
             className={`mt-2 ${
               theme === "dark" ? "text-gray-700" : "text-gray-200"
             }`}
           >
-            Ready to take your next test?
+            Ready to take your next SAT test?
           </p>
         </div>
 
@@ -78,84 +59,130 @@ const StudentDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{tests.length}</div>
-              <p className="text-xs text-muted-foreground">Ready to take</p>
+              <p className="text-xs text-muted-foreground">Available to take</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Tests Completed
+                Premium Tests
               </CardTitle>
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{allTestResults.length}</div>
-              <p className="text-xs text-muted-foreground">Total completed</p>
+              <div className="text-2xl font-bold">
+                {tests.filter((test) => test.isPremium).length}
+              </div>
+              <p className="text-xs text-muted-foreground">Premium access</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Average Score
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Math Tests</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{averageScore}%</div>
-              <p className="text-xs text-muted-foreground">
-                Overall performance
-              </p>
+              <div className="text-2xl font-bold">
+                {tests.filter((test) => test.subject === "mathematics").length}
+              </div>
+              <p className="text-xs text-muted-foreground">SAT Math focused</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Score History Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Score History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <ScoreHistoryChart data={chartData} />
-            ) : (
-              <p>No test results yet to display a chart.</p>
-            )}
-          </CardContent>
-        </Card>
+        {/* SAT Tests Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">SAT Tests</h2>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === "dark" ? "outline" : "default"}
+                size="sm"
+              >
+                All Tests
+              </Button>
+              <Button
+                variant={theme === "dark" ? "outline" : "default"}
+                size="sm"
+              >
+                Math
+              </Button>
+              <Button
+                variant={theme === "dark" ? "outline" : "default"}
+                size="sm"
+              >
+                Reading
+              </Button>
+            </div>
+          </div>
 
-        {/* Recent Results */}
-        {recentResults.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Results</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentResults.map((result, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 border rounded"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {tests.find((t) => t.id === result.testId)?.title ||
-                          `Test #${result.testId.split("-")[1]}`}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(result.submittedAt).toLocaleDateString()}
-                      </p>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <p>Loading tests...</p>
+            </div>
+          ) : tests.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-lg font-medium">No tests available</h3>
+              <p className="mt-1 text-muted-foreground">
+                Please check back later for new SAT tests.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tests.map((test) => (
+                <Card key={test.testId} className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{test.nomi}</CardTitle>
+                      {test.isPremium && (
+                        <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                          Premium
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">{result.score}%</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                        {test.subject}
+                      </span>
+                      <span>{test.questionCount} questions</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Avg. Score</span>
+                      <span className="font-medium">{test.average}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Attempts</span>
+                      <span className="font-medium">
+                        {test.jami_urinishlar}
+                      </span>
+                    </div>
+                    <Button
+                      asChild
+                      disabled={!test.hasAccess && test.isPremium}
+                      className="w-full"
+                    >
+                      <Link to={`/test/${test.testId}`}>
+                        {test.hasAccess || !test.isPremium
+                          ? "Start Test"
+                          : "Access Required"}
+                      </Link>
+                    </Button>
+                    {!test.hasAccess && test.isPremium && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        Contact your teacher to get access
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

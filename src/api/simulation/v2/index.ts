@@ -1,60 +1,150 @@
 // src/api/simulation/v2/index.ts
 
-import { db } from "./db";
-import {
-  type User,
-  type Teacher,
-  type Student,
-  type Parent,
-  type Test,
-  type TestAnswer,
-} from "@/types";
+import type { Test, TestAnswer, Question } from "@/types";
+import type { TestWithAccess, PaginatedTests, UserAccess, UserWithAccessList, PaginatedUsers } from "../real/types";
 
 // Simulate API latency
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// ================================================================================================
-// In-memory test→student assignment map (per-student explicit assignments)
-// ================================================================================================
-const assignments = new Map<string, Set<string>>(); // testId -> Set<studentId>
+// In-memory database for simulation
+const inMemoryDb = {
+  users: [
+    {
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      role: "student",
+      phone: "john@example.com",
+      status: "Active"
+    },
+    {
+      id: "2",
+      name: "Jane Smith",
+      email: "jane@example.com",
+      role: "student",
+      phone: "jane@example.com",
+      status: "Active"
+    },
+    {
+      id: "3",
+      name: "Bob Johnson",
+      email: "bob@example.com",
+      role: "teacher",
+      phone: "bob@example.com",
+      status: "Active"
+    }
+  ],
+  tests: [
+    {
+      testId: "1",
+      nomi: "SAT Math Practice Test 1",
+      subject: "mathematics",
+      questionCount: 58,
+      isPremium: false,
+      hasAccess: true,
+      jami_urinishlar: 120,
+      average: 750.5
+    },
+    {
+      testId: "2",
+      nomi: "SAT Reading Practice Test 1",
+      subject: "reading",
+      questionCount: 52,
+      isPremium: false,
+      hasAccess: true,
+      jami_urinishlar: 95,
+      average: 680.0
+    },
+    {
+      testId: "3",
+      nomi: "Advanced SAT Math Test",
+      subject: "mathematics",
+      questionCount: 58,
+      isPremium: true,
+      hasAccess: false,
+      jami_urinishlar: 15,
+      average: 720.0
+    }
+  ],
+  userAccess: [
+    {
+      userId: "1",
+      testId: "1"
+    },
+    {
+      userId: "2",
+      testId: "1"
+    },
+    {
+      userId: "2",
+      testId: "2"
+    }
+  ],
+  questions: [
+    {
+      id: "q1",
+      text: "What is the value of x in the equation 2x + 3 = 7?",
+      type: "multiple_choice",
+      options: [
+        { key: "A", text: "1" },
+        { key: "B", text: "2" },
+        { key: "C", text: "3" },
+        { key: "D", text: "4" }
+      ],
+      correctAnswer: "B"
+    },
+    {
+      id: "q2",
+      text: "Which of the following is the main idea of the passage?",
+      type: "multiple_choice",
+      options: [
+        { key: "A", text: "Option A" },
+        { key: "B", text: "Option B" },
+        { key: "C", text: "Option C" },
+        { key: "D", text: "Option D" }
+      ],
+      correctAnswer: "A"
+    }
+  ]
+};
 
 // =================================================================================================
 // --- Auth API ---
 // =================================================================================================
 
-// src/api/simulation/v2/auth.ts
-
 export const authAPI = {
-  login: (
-    identifier: string,
-    password: string,
-    nameSurname?: string,
-    className?: string,
-  ): { user: User; token: string } | null => {
-    let user: User | undefined;
+  async register(userData: { email: string; password: string; full_name: string; role?: "student" }): Promise<{ user: any; token: string }> {
+    await delay(500);
 
-    if (nameSurname && className) {
-      // 🔹 Student Login (name + class + password)
-      user = db.users.find(
-        (u) =>
-          u.role === "student" &&
-          u.name === nameSurname &&
-          (u as Student).class === className &&
-          u.password === password,
-      );
-    } else {
-      // 🔹 Admin / Teacher / Parent Login (phone/email + password)
-      const normalizedIdentifier = identifier.replace(/\s/g, "");
-      user = db.users.find(
-        (u) =>
-          (u.phone === normalizedIdentifier || u.email === identifier) &&
-          u.password === password,
-      );
+    const newUser = {
+      id: `user-${Date.now()}`,
+      name: userData.full_name,
+      email: userData.email,
+      role: userData.role || "student",
+      phone: userData.email,
+      status: "Active"
+    };
+
+    inMemoryDb.users.push(newUser);
+
+    const token = `mock-jwt-token-${newUser.id}`;
+    localStorage.setItem("auth", JSON.stringify({ user: newUser, token }));
+
+    return { user: newUser, token };
+  },
+
+  async login(credentials: { email: string; password: string }): Promise<{ user: any; token: string }> {
+    await delay(500);
+
+    const user = inMemoryDb.users.find(
+      u => u.email === credentials.email
+    );
+
+    if (!user) {
+      throw new Error("Invalid credentials");
     }
 
-    if (!user) return null;
-
-    const token = `fake-jwt-token-${user.id}`;
+    const token = `mock-jwt-token-${user.id}`;
     localStorage.setItem("auth", JSON.stringify({ user, token }));
 
     return { user, token };
@@ -64,218 +154,9 @@ export const authAPI = {
     localStorage.removeItem("auth");
   },
 
-  getCurrentUser: (): { user: User; token: string } | null => {
+  getCurrentUser: (): { user: any; token: string } | null => {
     const data = localStorage.getItem("auth");
     return data ? JSON.parse(data) : null;
-  },
-};
-
-// =================================================================================================
-// --- Admin API ---
-// =================================================================================================
-
-const adminAPI = {
-  async getUsers(): Promise<User[]> {
-    await delay(500);
-    return db.users;
-  },
-
-  async createUser(userData: Omit<User, "id">): Promise<User> {
-    await delay(500);
-    if (db.users.some((u) => u.email === userData.email)) {
-      throw new Error("User with this email already exists");
-    }
-
-    let newUser: User;
-    const baseUser = {
-      id: `${userData.role}-${Date.now()}`,
-      ...userData,
-    };
-
-    switch (userData.role) {
-      case "student":
-        newUser = {
-          ...baseUser,
-          role: "student",
-          teacherIds: [],
-          class: (userData as any).class || "",
-          parentId: null,
-        };
-        break;
-      case "parent":
-        newUser = {
-          ...baseUser,
-          role: "parent",
-          childrenIds: [],
-        };
-        break;
-      case "teacher":
-        newUser = {
-          ...baseUser,
-          role: "teacher",
-          studentIds: [],
-        };
-        break;
-      case "admin":
-        newUser = {
-          ...baseUser,
-          role: "admin",
-        };
-        break;
-      default:
-        throw new Error("Invalid user role");
-    }
-
-    db.users.push(newUser);
-    return newUser;
-  },
-
-  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
-    await delay(500);
-    const userIndex = db.users.findIndex((u) => u.id === userId);
-    if (userIndex === -1) {
-      throw new Error("User not found");
-    }
-
-    const existingUser = db.users[userIndex];
-
-    // Prevent role changes for simplicity in this simulation
-    if (updates.role && updates.role !== existingUser.role) {
-      delete updates.role;
-    }
-
-    db.users[userIndex] = { ...existingUser, ...updates } as User;
-    return db.users[userIndex];
-  },
-
-  async deleteUser(userId: string): Promise<void> {
-    await delay(500);
-    const index = db.users.findIndex((u) => u.id === userId);
-    if (index === -1) {
-      throw new Error("User not found");
-    }
-    db.users.splice(index, 1);
-  },
-
-  async assignTeacherToStudent(
-    teacherId: string,
-    studentId: string,
-  ): Promise<void> {
-    await delay(500);
-    const teacher = db.users.find(
-      (u) => u.id === teacherId && u.role === "teacher",
-    ) as Teacher | undefined;
-    const student = db.users.find(
-      (u) => u.id === studentId && u.role === "student",
-    ) as Student | undefined;
-
-    if (!teacher || !student) {
-      throw new Error("Teacher or student not found");
-    }
-
-    if (!teacher.studentIds.includes(studentId)) {
-      teacher.studentIds.push(studentId);
-    }
-    if (!student.teacherIds.includes(teacherId)) {
-      student.teacherIds.push(teacherId);
-    }
-  },
-
-  async assignParentToStudent(
-    parentId: string,
-    studentId: string,
-  ): Promise<void> {
-    await delay(500);
-    const parent = db.users.find(
-      (u) => u.id === parentId && u.role === "parent",
-    ) as Parent | undefined;
-    const student = db.users.find(
-      (u) => u.id === studentId && u.role === "student",
-    ) as Student | undefined;
-
-    if (!parent || !student) {
-      throw new Error("Parent or student not found");
-    }
-
-    if (!parent.childrenIds.includes(studentId)) {
-      parent.childrenIds.push(studentId);
-    }
-    student.parentId = parentId;
-  },
-};
-
-// =================================================================================================
-// --- Teacher API ---
-// =================================================================================================
-
-const teacherAPI = {
-  async getTests(teacherId: string): Promise<Test[]> {
-    await delay(500);
-    return db.tests.filter((t) => t.teacherId === teacherId);
-  },
-
-  async getTest(testId: string): Promise<Test | undefined> {
-    await delay(300);
-    return db.tests.find((t) => t.id === testId);
-  },
-
-  async createTest(testData: Omit<Test, "id">): Promise<Test> {
-    await delay(500);
-    const newTest: Test = {
-      id: `test-${Date.now()}`,
-      ...testData,
-    };
-    db.tests.push(newTest);
-    return newTest;
-  },
-
-  async updateTest(testId: string, updates: Partial<Test>): Promise<Test> {
-    await delay(500);
-    const testIndex = db.tests.findIndex((t) => t.id === testId);
-    if (testIndex === -1) {
-      throw new Error("Test not found");
-    }
-    db.tests[testIndex] = { ...db.tests[testIndex], ...updates };
-    return db.tests[testIndex];
-  },
-
-  async deleteTest(testId: string): Promise<void> {
-    await delay(500);
-    const index = db.tests.findIndex((t) => t.id === testId);
-    if (index === -1) {
-      throw new Error("Test not found");
-    }
-    db.tests.splice(index, 1);
-    assignments.delete(testId); // cleanup any assignments
-  },
-
-  async assignTestToStudent(testId: string, studentId: string): Promise<void> {
-    await delay(300);
-    const test = db.tests.find((t) => t.id === testId);
-    const student = db.users.find(
-      (u) => u.id === studentId && u.role === "student",
-    ) as Student | undefined;
-
-    if (!test) throw new Error("Test not found");
-    if (!student) throw new Error("Student not found");
-
-    if (!assignments.has(testId)) assignments.set(testId, new Set());
-    assignments.get(testId)!.add(studentId);
-  },
-
-  async getAssignedStudents(testId: string): Promise<Student[]> {
-    await delay(300);
-    const set = assignments.get(testId);
-    if (!set || set.size === 0) return [];
-    const ids = Array.from(set);
-    return db.users.filter(
-      (u): u is Student => u.role === "student" && ids.includes(u.id),
-    );
-  },
-
-  async getTestResults(testId: string): Promise<TestAnswer[]> {
-    await delay(500);
-    return db.testAnswers.filter((ta) => ta.testId === testId);
   },
 };
 
@@ -284,124 +165,183 @@ const teacherAPI = {
 // =================================================================================================
 
 const studentAPI = {
-  async getAssignedTests(studentId: string): Promise<Test[]> {
+  async getTests(params?: { page?: number; limit?: number; subject?: string }): Promise<PaginatedTests> {
     await delay(500);
-    const student = db.users.find(
-      (u) => u.id === studentId && u.role === "student",
-    ) as Student | undefined;
-    if (!student) {
-      throw new Error("Student not found");
+
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const subject = params?.subject;
+
+    let filteredTests = inMemoryDb.tests;
+
+    if (subject) {
+      filteredTests = filteredTests.filter(test => test.subject === subject);
     }
 
-    // 1) Explicit per-student assignments (preferred)
-    const explicitlyAssigned = db.tests.filter((t) => {
-      const set = assignments.get(t.id);
-      return set?.has(studentId);
-    });
+    const totalTests = filteredTests.length;
+    const totalPages = Math.ceil(totalTests / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
 
-    if (explicitlyAssigned.length > 0) {
-      return explicitlyAssigned;
-    }
+    const paginatedTests = filteredTests.slice(startIndex, endIndex);
 
-    // 2) Fallback: all tests from this student's teachers
-    return db.tests.filter((test) =>
-      (student.teacherIds || []).includes(test.teacherId),
-    );
+    return {
+      page,
+      totalPages,
+      totalTests,
+      tests: paginatedTests
+    };
   },
 
-  async getTest(testId: string): Promise<Test | undefined> {
+  async getTest(testId: string): Promise<{ testId: string; title: string; subject: string; questions: Question[] }> {
     await delay(300);
-    return db.tests.find((t) => t.id === testId);
-  },
 
-  async submitTest(
-    submission: Omit<
-      TestAnswer,
-      "id" | "submittedAt" | "score" | "correctAnswers" | "totalQuestions"
-    >,
-  ): Promise<TestAnswer> {
-    await delay(1000);
+    const test = inMemoryDb.tests.find(t => t.testId === testId);
 
-    const test = await teacherAPI.getTest(submission.testId);
     if (!test) {
       throw new Error("Test not found");
     }
 
-    // --- Robust scoring: supports both index-based and id-based schemas ---
-    let correctAnswers = 0;
+    // Return the questions for this test
+    const questions = inMemoryDb.questions.filter(q => q.id.startsWith(testId));
 
-    for (const answer of submission.answers) {
-      const question = test.questions.find((q) => q.id === answer.questionId);
-      if (!question) continue;
-
-      // If your schema uses indexes (recommended & used in your UI)
-      const hasIndex =
-        "correctAnswerIndex" in question && "answeredIndex" in answer;
-
-      if (hasIndex) {
-        if (
-          (question as any).correctAnswerIndex === (answer as any).answeredIndex
-        ) {
-          correctAnswers++;
-        }
-        continue;
-      }
-
-      // If your schema uses IDs
-      const hasId = "correctAnswerId" in question && "answeredId" in answer;
-
-      if (hasId) {
-        if ((question as any).correctAnswerId === (answer as any).answeredId) {
-          correctAnswers++;
-        }
-      }
-    }
-
-    const score = Math.round((correctAnswers / test.questions.length) * 100);
-
-    const newTestAnswer: TestAnswer = {
-      id: `ta-${Date.now()}`,
-      ...submission,
-      submittedAt: new Date().toISOString(),
-      score,
-      correctAnswers,
-      totalQuestions: test.questions.length,
+    return {
+      testId,
+      title: test.nomi,
+      subject: test.subject,
+      questions: questions.length > 0 ? questions : inMemoryDb.questions.slice(0, 3) // fallback to sample questions
     };
+  },
 
-    db.testAnswers.push(newTestAnswer);
-    return newTestAnswer;
+  async submitTest(testId: string, submission: { score: number }): Promise<any> {
+    await delay(500);
+
+    // In a real app, this would update test statistics
+    console.log(`Test ${testId} submitted with score:`, submission.score);
+
+    return { success: true, message: "Test submitted successfully" };
   },
 };
 
 // =================================================================================================
-// --- Parent API ---
+// --- Teacher API ---
 // =================================================================================================
 
-const parentAPI = {
-  async getChildren(parentId: string): Promise<Student[]> {
+const teacherAPI = {
+  async createTest(testData: any): Promise<any> {
     await delay(500);
-    const parent = db.users.find(
-      (u) => u.id === parentId && u.role === "parent",
-    ) as Parent | undefined;
-    if (!parent) {
-      throw new Error("Parent not found");
-    }
-    return db.users.filter(
-      (u): u is Student =>
-        u.role === "student" && parent.childrenIds.includes(u.id),
-    );
+
+    const newTest = {
+      testId: `test-${Date.now()}`,
+      nomi: testData.title || "New SAT Test",
+      subject: testData.subject || "mathematics",
+      questionCount: testData.questions?.length || 0,
+      isPremium: testData.isPremium || false,
+      hasAccess: true,
+      jami_urinishlar: 0,
+      average: 0
+    };
+
+    inMemoryDb.tests.push(newTest);
+
+    return newTest;
   },
 
-  async getChildTestResults(studentId: string): Promise<TestAnswer[]> {
+  async grantAccess(accessData: UserAccess): Promise<any> {
+    await delay(300);
+
+    // Check if access already exists
+    const existingAccess = inMemoryDb.userAccess.find(
+      ua => ua.userId === accessData.userId && ua.testId === accessData.testId
+    );
+
+    if (!existingAccess) {
+      inMemoryDb.userAccess.push(accessData);
+    }
+
+    return { success: true, message: "Access granted successfully" };
+  },
+
+  async revokeAccess(accessData: UserAccess): Promise<any> {
+    await delay(300);
+
+    const index = inMemoryDb.userAccess.findIndex(
+      ua => ua.userId === accessData.userId && ua.testId === accessData.testId
+    );
+
+    if (index !== -1) {
+      inMemoryDb.userAccess.splice(index, 1);
+    }
+
+    return { success: true, message: "Access revoked successfully" };
+  },
+
+  async getUser(userId: string): Promise<UserWithAccessList> {
+    await delay(300);
+
+    const user = inMemoryDb.users.find(u => u.id === userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get user's access list
+    const accessList = inMemoryDb.userAccess
+      .filter(ua => ua.userId === userId)
+      .map(ua => ua.testId);
+
+    return {
+      id: user.id,
+      full_name: user.name,
+      email: user.email,
+      access_list: accessList
+    };
+  },
+
+  async getUsers(params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedUsers> {
     await delay(500);
-    return db.testAnswers.filter((ta) => ta.studentId === studentId);
+
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const search = params?.search;
+
+    let filteredUsers = inMemoryDb.users.filter(u => u.role === "student");
+
+    if (search) {
+      filteredUsers = filteredUsers.filter(
+        u => u.name.toLowerCase().includes(search.toLowerCase()) ||
+             u.email.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    const total = filteredUsers.length;
+    const totalPages = Math.ceil(total / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex).map(user => {
+      const accessList = inMemoryDb.userAccess
+        .filter(ua => ua.userId === user.id)
+        .map(ua => ua.testId);
+
+      return {
+        id: user.id,
+        full_name: user.name,
+        email: user.email,
+        access_list: accessList
+      };
+    });
+
+    return {
+      users: paginatedUsers,
+      total,
+      page
+    };
   },
 };
 
 export const api = {
   auth: authAPI,
-  admin: adminAPI,
-  teacher: teacherAPI,
   student: studentAPI,
-  parent: parentAPI,
+  teacher: teacherAPI,
 };

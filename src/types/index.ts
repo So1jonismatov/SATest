@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 // ========= USER TYPES =========
-export type UserRole = "admin" | "teacher" | "student" | "parent";
+export type UserRole = "teacher" | "student";
 export type UserStatus = "Active" | "Inactive" | "Suspended" | "Pending";
 
 export interface BaseUser {
@@ -15,10 +15,6 @@ export interface BaseUser {
   createdAt?: string;
   lastLogin?: string;
   avatar?: string;
-}
-
-export interface Admin extends BaseUser {
-  role: "admin";
 }
 
 export interface Teacher extends BaseUser {
@@ -42,7 +38,6 @@ export interface Student extends BaseUser {
   grade?: string;
   parentId: string | null;
   teacherIds: string[];
-  class: string;
   enrollmentDate?: string;
   dateOfBirth?: string;
   address?: string;
@@ -54,31 +49,7 @@ export interface Student extends BaseUser {
   enrolledTests?: string[]; // ✅ added to match mock data
 }
 
-export interface Child extends Student {
-  role: "student";
-  studentId?: string;
-  grade?: string;
-  parentId: string | null;
-  teacherIds: string[];
-  class: string;
-  enrollmentDate?: string;
-  dateOfBirth?: string;
-  address?: string;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-}
-
-export interface Parent extends BaseUser {
-  role: "parent";
-  childrenIds: string[];
-  address?: string;
-  occupation?: string;
-}
-
-export type User = Admin | Teacher | Student | Parent;
+export type User = Teacher | Student;
 
 // ========= AUTH TYPES =========
 export interface AuthContextType {
@@ -184,22 +155,8 @@ export interface Homework {
   grade?: string;
 }
 
-// ========= ADMIN & CLASS TYPES =========
-export interface Class {
-  id: string;
-  name: string;
-  grade: string;
-  teacherId: string;
-  studentIds: string[];
-  subject: string;
-  schedule: {
-    days: string[];
-    time: string;
-    room: string;
-  };
-}
-
-export interface AdminActivity {
+// ========= TEACHER TYPES =========
+export interface TeacherActivity {
   id: string;
   type: "user_created" | "user_updated" | "user_deleted" | "assignment_changed";
   message: string;
@@ -208,14 +165,12 @@ export interface AdminActivity {
   userName?: string;
 }
 
-export interface AdminStats {
+export interface TeacherStats {
   totalStudents: number;
   totalTeachers: number;
-  totalParents: number;
-  totalClasses: number;
   activeUsers: number;
   newRegistrations: number;
-  recentActivity: AdminActivity[];
+  recentActivity: TeacherActivity[];
 }
 
 export interface TeacherAssignment {
@@ -247,126 +202,6 @@ export interface RecentActivity {
   timestamp: string;
   studentName?: string;
   testTitle?: string;
-}
-
-// ========= PARENT-SPECIFIC TYPES =========
-export interface Course {
-  id: string;
-  name: string;
-  subject: string;
-  teacher: Teacher;
-  schedule: {
-    days: string[];
-    time: string;
-    room: string;
-  };
-  description: string;
-  credits: number;
-}
-
-export interface Enrollment {
-  id: string;
-  childId: string;
-  courseId: string;
-  enrollmentDate: string;
-  status: "Active" | "Dropped" | "Completed";
-  currentGrade?: string;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  senderName: string;
-  receiverName: string;
-  subject: string;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  threadId?: string;
-  attachments?: {
-    name: string;
-    url: string;
-    type: string;
-  }[];
-}
-
-export interface MessageThread {
-  id: string;
-  participants: {
-    id: string;
-    name: string;
-    role: "parent" | "teacher";
-  }[];
-  subject: string;
-  lastMessage: Message;
-  messageCount: number;
-  isArchived: boolean;
-}
-
-export interface RecentTest {
-  testId: string;
-  score: number;
-  correctAnswers: number;
-  totalQuestions: number;
-  completedOn: string;
-}
-
-export interface ChildPerformance {
-  childId: string;
-  overallGrade: string;
-  gpa: number;
-  totalHomeworks: number;
-  completedHomeworks: number;
-  pendingHomeworks: number;
-  averageTestScore: number;
-  recentTests: RecentTest[];
-  recentHomeworks: Homework[];
-  attendance: {
-    totalDays: number;
-    presentDays: number;
-    absentDays: number;
-    tardyDays: number;
-  };
-}
-
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  author: string;
-  authorRole: "teacher" | "admin";
-  targetAudience: "all" | "parents" | "students" | "grade-specific";
-  grade?: string;
-  createdAt: string;
-  isImportant: boolean;
-  attachments?: {
-    name: string;
-    url: string;
-  }[];
-}
-
-export interface SchoolEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  location: string;
-  type: "meeting" | "performance" | "holiday" | "exam" | "sports" | "other";
-  isAllDay: boolean;
-  targetAudience: "all" | "parents" | "students" | "grade-specific";
-  grade?: string;
-}
-
-export interface ParentDashboardData {
-  children: Student[];
-  totalChildren: number;
-  activeChildren: number;
-  unreadMessages: number;
-  upcomingEvents: SchoolEvent[];
-  recentAnnouncements: Announcement[];
-  childrenPerformance: ChildPerformance[];
 }
 
 // ========= THEME TYPES =========

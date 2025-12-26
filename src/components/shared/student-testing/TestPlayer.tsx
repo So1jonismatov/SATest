@@ -52,7 +52,7 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
         "Are you sure you want to exit? Your progress will not be saved.",
       )
     ) {
-      navigate("/student/tests");
+      navigate("/");
     }
   };
 

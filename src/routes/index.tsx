@@ -1,90 +1,81 @@
 import { createBrowserRouter } from "react-router-dom";
 import HomePageLayout from "@/layout/HomePageLayout";
-import StudentPortalLayout from "@/layout/StudentPortalLayout";
-import ParentPortalLayout from "@/layout/ParentPortalLayout";
 import TeacherPortalLayout from "@/layout/TeacherPageLayout";
-import AdminPortalLayout from "@/layout/AdminPortalLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import {
-  AdminDashboard,
-  AdminUserManagement,
-  HomePage,
   LoginPage,
   NotFound,
-  ParentDashboard,
-  ParentChildManagement,
-  ParentReports,
   RegisterPage,
   StudentDashboard,
-  StudentTesting,
+  StudentProfile,
+  StudentSettings,
   TestPlayerPage,
   TestResultPage,
   TeacherPortal,
+  TeacherProfile,
+  TeacherSettings,
   TeacherTestManagement,
   UnauthorizedPage,
 } from "@/pages";
 
 const router = createBrowserRouter([
-  // Public routes
-  {
-    path: "/",
-    element: <HomePageLayout />,
-    children: [{ index: true, element: <HomePage /> }],
-  },
+  // Public routes // Make StudentDashboard the home page
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
   { path: "/unauthorized", element: <UnauthorizedPage /> },
 
-  // Student Portal
+  // Student Portal - using main layout
   {
-    path: "/student",
+    path: "/",
     element: (
       <ProtectedRoute allowedRoles={["student"]}>
-        <StudentPortalLayout />
+        <HomePageLayout />
       </ProtectedRoute>
     ),
-    children: [
-      { path: "dashboard", element: <StudentDashboard /> },
-      { path: "tests", element: <StudentTesting /> },
-    ],
+    children: [{ path: "", element: <StudentDashboard /> }],
   },
-
-  // Fullscreen Student Routes (no sidebar)
   {
-    path: "/student/test/:testId",
+    path: "/profile",
     element: (
       <ProtectedRoute allowedRoles={["student"]}>
-        <TestPlayerPage />
+        <HomePageLayout />
       </ProtectedRoute>
     ),
+    children: [{ path: "", element: <StudentProfile /> }],
   },
   {
-    path: "/student/result/:testId",
+    path: "/settings",
     element: (
       <ProtectedRoute allowedRoles={["student"]}>
-        <TestResultPage />
+        <HomePageLayout />
       </ProtectedRoute>
     ),
+    children: [{ path: "", element: <StudentSettings /> }],
   },
 
-  // Parent Portal
+  // Student Test Routes (with main layout)
   {
-    path: "/parent",
+    path: "/test/:testId",
     element: (
-      <ProtectedRoute allowedRoles={["parent"]}>
-        <ParentPortalLayout />
+      <ProtectedRoute allowedRoles={["student"]}>
+        <HomePageLayout />
       </ProtectedRoute>
     ),
-    children: [
-      { path: "dashboard", element: <ParentDashboard /> },
-      { path: "children", element: <ParentChildManagement /> },
-      { path: "results", element: <ParentReports /> },
-    ],
+    children: [{ path: "", element: <TestPlayerPage /> }],
+  },
+  {
+    path: "/result/:testId",
+    element: (
+      <ProtectedRoute allowedRoles={["student"]}>
+        <HomePageLayout />
+      </ProtectedRoute>
+    ),
+    children: [{ path: "", element: <TestResultPage /> }],
   },
 
-  // Teacher Portal
+  // Teacher/Admin Portal (combined)
   {
-    path: "/teacher",
+    path: "/admin",
     element: (
       <ProtectedRoute allowedRoles={["teacher"]}>
         <TeacherPortalLayout />
@@ -93,20 +84,9 @@ const router = createBrowserRouter([
     children: [
       { path: "dashboard", element: <TeacherPortal /> },
       { path: "tests", element: <TeacherTestManagement /> },
-    ],
-  },
-
-  // Admin Portal
-  {
-    path: "/admin",
-    element: (
-      <ProtectedRoute allowedRoles={["admin"]}>
-        <AdminPortalLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { path: "dashboard", element: <AdminDashboard /> },
-      { path: "users", element: <AdminUserManagement /> },
+      { path: "students", element: <TeacherTestManagement /> }, // For now, redirect to test management
+      { path: "profile", element: <TeacherProfile /> },
+      { path: "settings", element: <TeacherSettings /> },
     ],
   },
 

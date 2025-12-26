@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useFullscreen } from "@/context/FullscreenContext";
 
-type Role = "student" | "teacher" | "admin" | "parent";
+type Role = "student" | "teacher";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -35,16 +35,16 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/login" state={{ from: location }} replace />;
+  // }
 
-  if (allowedRoles && allowedRoles.length > 0 && user) {
-    const hasRequiredRole = allowedRoles.includes(user.role);
-    if (!hasRequiredRole) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-  }
+  // if (allowedRoles && allowedRoles.length > 0 && user) {
+  //   const hasRequiredRole = allowedRoles.includes(user.role);
+  //   if (!hasRequiredRole) {
+  //     return <Navigate to="/unauthorized" replace />;
+  //   }
+  // }
 
   return <>{children}</>;
 };

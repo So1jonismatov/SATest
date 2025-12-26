@@ -2,15 +2,15 @@ import { type User as AppUser } from '@/types';
 import { type User as ApiUser } from '@/api/real/types';
 
 export const mapApiUserToAppUser = (apiUser: ApiUser): AppUser => {
-  const { id, first_name, last_name, phone_number, role } = apiUser;
+  const { id, name, email, role } = apiUser;
 
   const baseAppUser = {
     id: id.toString(),
-    name: `${first_name} ${last_name}`,
-    phone: phone_number,
+    name,
+    email,
     role,
     // Providing default values for fields not present in the API response
-    email: '',
+    phone: email || '', // Using email as phone for now since we don't have phone in the new API
     status: 'Active' as const,
   };
 
@@ -18,26 +18,14 @@ export const mapApiUserToAppUser = (apiUser: ApiUser): AppUser => {
     return {
       ...baseAppUser,
       role: 'student',
-      class: apiUser.class_id?.toString() || '',
       parentId: null,
       teacherIds: [],
-    };
-  } else if (role === 'parent') {
-    return {
-      ...baseAppUser,
-      role: 'parent',
-      childrenIds: [],
     };
   } else if (role === 'teacher') {
     return {
       ...baseAppUser,
       role: 'teacher',
       studentIds: [],
-    };
-  } else if (role === 'admin') {
-    return {
-      ...baseAppUser,
-      role: 'admin',
     };
   }
 

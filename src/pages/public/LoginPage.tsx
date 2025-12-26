@@ -1,16 +1,11 @@
 import { StudentLoginForm } from "@/components/shared/Authenticaton/student-login-form";
 import { GeneralLoginForm } from "@/components/shared/Authenticaton/general-login-form";
 
-type Role = "student" | "teacher" | "admin" | "parent";
+type Role = "student" | "teacher";
 
 const getRole = (): Role => {
   const role = localStorage.getItem("chosenRole");
-  if (
-    role === "student" ||
-    role === "teacher" ||
-    role === "admin" ||
-    role === "parent"
-  ) {
+  if (role === "student" || role === "teacher") {
     return role;
   }
   // Default to student if no role is set or role is invalid
