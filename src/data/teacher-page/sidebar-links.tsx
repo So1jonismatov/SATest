@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Users, LogOut, UserCog } from "lucide-react";
 
 const links = [
   {
@@ -12,9 +12,9 @@ const links = [
     icon: <FileText className="h-5 w-5" />,
   },
   {
-    label: "Students",
-    href: "/admin/students", // This could be a future route for managing students
-    icon: <Users className="h-5 w-5" />,
+    label: "Student Management",
+    href: "/admin/students",
+    icon: <UserCog className="h-5 w-5" />,
   },
   {
     label: "Logout",

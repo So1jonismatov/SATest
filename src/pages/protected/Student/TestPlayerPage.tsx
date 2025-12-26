@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { type Test } from "@/types";
 import { TestPlayer } from "@/components/shared/student-testing/TestPlayer";
-import { mockApi as api } from "@/api/mock";
+import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
 
 const TestPlayerPage = () => {
@@ -20,13 +20,42 @@ const TestPlayerPage = () => {
   const handleSubmitTest = async (
     answers: { questionId: string; answeredId: string }[],
   ) => {
-    if (testId && user) {
-      // Calculate score - this is a simplified version
-      const score = answers.length > 0 ? Math.floor(Math.random() * 100) : 0; // Mock score
-      const result = await api.student.submitTest(testId, { score });
+    if (testId && user && test) {
+      let correctAnswersCount = 0;
+      const totalQuestions = test.questions.length;
+
+      const correctAnswersMap = new Map<string, string>();
+      test.questions.forEach(q => {
+        if (q.correctAnswer) {
+          correctAnswersMap.set(q.id, q.correctAnswer);
+        }
+      });
+
+      for (const submittedAnswer of answers) {
+        if (correctAnswersMap.has(submittedAnswer.questionId) &&
+            correctAnswersMap.get(submittedAnswer.questionId) === submittedAnswer.answeredId) {
+          correctAnswersCount++;
+        }
+      }
+
+      const score = totalQuestions > 0 ? Math.floor((correctAnswersCount / totalQuestions) * 100) : 0;
+
+      await api.student.submitTest(testId, { score });
+
+      const detailedResult = {
+        id: `result-${Date.now()}`,
+        testId: testId,
+        studentId: user.id,
+        submittedAt: new Date().toISOString(),
+        score: score,
+        answers: answers,
+        correctAnswers: correctAnswersCount,
+        totalQuestions: totalQuestions,
+      };
+
       navigate(`/result/${testId}`, {
         replace: true,
-        state: { result },
+        state: { result: detailedResult },
       });
     }
   };

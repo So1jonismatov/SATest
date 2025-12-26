@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockApi as api } from "@/api/mock";
+import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
 import { type Test, type Question } from "@/types/index";
 import { Plus, Trash2, Eye, FileText, Search, ImagePlus, Users, UserCheck } from "lucide-react";
@@ -20,6 +20,7 @@ import type { TestWithAccess, UserWithAccessList } from "@/api/real/types";
 
 const TeacherTestManagement: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tests, setTests] = useState<TestWithAccess[]>([]);
   const [users, setUsers] = useState<UserWithAccessList[]>([]);
   const [selectedTest, setSelectedTest] = useState<TestWithAccess | null>(null);
@@ -31,8 +32,15 @@ const TeacherTestManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedTestForAccess, setSelectedTestForAccess] = useState<string | null>(null);
 
-  const [newTest, setNewTest] = useState<Partial<Test>>({
+  const [newTest, setNewTest] = useState<{
+    title: string;
+    subject?: string;
+    isPremium?: boolean;
+    questions?: any[];
+  }>({
     title: "",
+    subject: "",
+    isPremium: false,
     questions: [],
   });
 
@@ -146,18 +154,23 @@ const TeacherTestManagement: React.FC = () => {
     const newTestWithId: TestWithAccess = {
       testId: `test-${Date.now()}`,
       nomi: newTest.title || "New Test",
-      subject: "mathematics",
-      questionCount: newTest.questions?.length || 0,
-      isPremium: false,
+      subject: newTest.subject || "mathematics",
+      questionCount: 0, // Initially no questions
+      isPremium: newTest.isPremium || false,
       hasAccess: true,
       jami_urinishlar: 0,
       average: 0
     };
 
     setTests([...tests, newTestWithId]);
+
+    // Navigate to the new test creation page
+    navigate(`/admin/tests/${newTestWithId.testId}/edit`);
+
     setNewTest({
       title: "",
-      questions: [],
+      subject: "",
+      isPremium: false,
     });
     setIsCreateDialogOpen(false);
   };
@@ -270,178 +283,56 @@ const TeacherTestManagement: React.FC = () => {
                   <DialogTitle>Create New SAT Test</DialogTitle>
                 </DialogHeader>
 
-                <Tabs defaultValue="details" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="details">Test Details</TabsTrigger>
-                    <TabsTrigger value="questions">Questions</TabsTrigger>
-                  </TabsList>
-
-                  {/* -------- DETAILS TAB -------- */}
-                  <TabsContent value="details" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="title">Test Title</Label>
-                        <Input
-                          id="title"
-                          value={newTest.title}
-                          onChange={(e) =>
-                            setNewTest({ ...newTest, title: e.target.value })
-                          }
-                          placeholder="Enter SAT test title"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="subject">Subject</Label>
-                        <Input
-                          id="subject"
-                          value={newTest.subject}
-                          onChange={(e) =>
-                            setNewTest({ ...newTest, subject: e.target.value })
-                          }
-                          placeholder="e.g., mathematics, reading"
-                        />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="title">Test Title</Label>
+                      <Input
+                        id="title"
+                        value={newTest.title}
+                        onChange={(e) =>
+                          setNewTest({ ...newTest, title: e.target.value })
+                        }
+                        placeholder="Enter test title (e.g., SAT Math Practice Test)"
+                      />
+                    </div>
+                    <div>
+                      <Label>Subject</Label>
+                      <div className="flex border rounded-md overflow-hidden">
+                        <button
+                          className={`flex-1 py-2 px-4 ${
+                            (newTest.subject === 'mathematics' || !newTest.subject)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-background hover:bg-accent'
+                          }`}
+                          onClick={() => setNewTest({ ...newTest, subject: 'mathematics' })}
+                        >
+                          Mathematics
+                        </button>
+                        <button
+                          className={`flex-1 py-2 px-4 ${
+                            newTest.subject === 'reading'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-background hover:bg-accent'
+                          }`}
+                          onClick={() => setNewTest({ ...newTest, subject: 'reading' })}
+                        >
+                          Reading
+                        </button>
                       </div>
                     </div>
-                  </TabsContent>
+                  </div>
 
-                  {/* -------- QUESTIONS TAB -------- */}
-                  <TabsContent value="questions" className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">
-                          Questions ({newTest.questions?.length || 0})
-                        </h3>
-                      </div>
-
-                      {/* Add Question Form */}
-                      <Card className="border-dashed">
-                        <CardHeader>
-                          <CardTitle className="text-base">
-                            Add New Question
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <Label htmlFor="questionText">Question Text</Label>
-                            <Textarea
-                              id="questionText"
-                              value={newQuestion.text}
-                              onChange={(e) =>
-                                setNewQuestion({
-                                  ...newQuestion,
-                                  text: e.target.value,
-                                })
-                              }
-                              placeholder="Enter your SAT question here..."
-                              rows={2}
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="questionOptions">
-                              Answer Options
-                            </Label>
-                            <div className="space-y-2">
-                              {newQuestion.options?.map((option, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                  <span className="w-6 text-sm font-medium">
-                                    {String.fromCharCode(65 + index)}
-                                  </span>
-                                  <Input
-                                    value={option}
-                                    onChange={(e) => {
-                                      const newOptions = [...(newQuestion.options || [])];
-                                      newOptions[index] = e.target.value;
-                                      setNewQuestion({
-                                        ...newQuestion,
-                                        options: newOptions,
-                                      });
-                                    }}
-                                    placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                                  />
-                                </div>
-                              ))}
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setNewQuestion({
-                                    ...newQuestion,
-                                    options: [...(newQuestion.options || []), ""],
-                                  });
-                                }}
-                              >
-                                Add Option
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label>Correct Answer</Label>
-                            <div className="flex flex-wrap gap-2">
-                              {newQuestion.options?.map((_, index) => (
-                                <div key={index} className="flex items-center">
-                                  <input
-                                    type="radio"
-                                    name="correctAnswer"
-                                    checked={newQuestion.correctAnswer === String.fromCharCode(65 + index)}
-                                    onChange={() =>
-                                      setNewQuestion({
-                                        ...newQuestion,
-                                        correctAnswer: String.fromCharCode(65 + index),
-                                      })
-                                    }
-                                  />
-                                  <Label className="ml-1 text-sm">
-                                    {String.fromCharCode(65 + index)}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <Button
-                            onClick={handleAddQuestion}
-                            disabled={!newQuestion.text || !newQuestion.options || newQuestion.options.length === 0}
-                          >
-                            Add Question
-                          </Button>
-                        </CardContent>
-                      </Card>
-
-                      {/* Questions List */}
-                      {(newTest.questions?.length ?? 0) > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Questions Added:</h4>
-                          {newTest.questions!.map((question, index) => (
-                            <Card key={question.id} className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-medium">
-                                    Q{index + 1}: {question.text}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    Correct: {question.correctAnswer}
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleRemoveQuestion(question.id)
-                                  }
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                  <div className="flex items-center space-x-2 pt-4">
+                    <Input
+                      type="checkbox"
+                      id="isPremium"
+                      checked={newTest.isPremium || false}
+                      onChange={(e) => setNewTest({ ...newTest, isPremium: e.target.checked })}
+                    />
+                    <Label htmlFor="isPremium">Premium Test (requires admin access)</Label>
+                  </div>
+                </div>
 
                 <div className="flex justify-end space-x-2 mt-6">
                   <Button
@@ -452,7 +343,7 @@ const TeacherTestManagement: React.FC = () => {
                   </Button>
                   <Button
                     onClick={handleCreateTest}
-                    disabled={!newTest.title || !newTest.questions?.length}
+                    disabled={!newTest.title}
                   >
                     Create Test
                   </Button>

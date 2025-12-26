@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { mockApi as api } from "@/api/mock";
+import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
 import type { Test } from "@/types/index";
 import type { TestWithAccess, UserWithAccessList } from "@/api/real/types";

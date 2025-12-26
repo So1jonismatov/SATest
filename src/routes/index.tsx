@@ -7,8 +7,10 @@ import {
   NotFound,
   RegisterPage,
   StudentDashboard,
+  StudentManagement,
   StudentProfile,
   StudentSettings,
+  TestCreationPage,
   TestPlayerPage,
   TestResultPage,
   TeacherPortal,
@@ -84,7 +86,8 @@ const router = createBrowserRouter([
     children: [
       { path: "dashboard", element: <TeacherPortal /> },
       { path: "tests", element: <TeacherTestManagement /> },
-      { path: "students", element: <TeacherTestManagement /> }, // For now, redirect to test management
+      { path: "tests/:testId/edit", element: <TestCreationPage /> }, // New test creation page
+      { path: "students", element: <StudentManagement /> }, // New student management page
       { path: "profile", element: <TeacherProfile /> },
       { path: "settings", element: <TeacherSettings /> },
     ],

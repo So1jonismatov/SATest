@@ -174,15 +174,15 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                 }
               >
                 <div className="space-y-4">
-                  {currentQuestion.answers.map((answer) => (
+                  {(currentQuestion.answers || currentQuestion.options || []).map((answer) => (
                     <div
-                      key={answer.id}
+                      key={answer.id || answer.key}
                       onClick={() =>
                         !isSubmitting &&
-                        handleAnswerSelect(currentQuestion.id, answer.id)
+                        handleAnswerSelect(currentQuestion.id, answer.id || answer.key)
                       }
                       className={`flex items-center p-4 border rounded-md transition-colors ${
-                        selectedAnswer === answer.id
+                        selectedAnswer === (answer.id || answer.key)
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-accent"
                       } ${isSubmitting ? "cursor-not-allowed" : "cursor-pointer"}`}
@@ -190,10 +190,10 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                       <input
                         type="radio"
                         name={`question-${currentQuestion.id}`}
-                        value={answer.id}
-                        checked={selectedAnswer === answer.id}
+                        value={answer.id || answer.key}
+                        checked={selectedAnswer === (answer.id || answer.key)}
                         onChange={() =>
-                          handleAnswerSelect(currentQuestion.id, answer.id)
+                          handleAnswerSelect(currentQuestion.id, answer.id || answer.key)
                         }
                         disabled={isSubmitting}
                         className="mr-4 h-4 w-4 accent-primary"

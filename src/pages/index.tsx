@@ -10,6 +10,8 @@ export { default as TeacherPortal } from "./protected/Teacher/TeacherPortal";
 export { default as TeacherProfile } from "./protected/Teacher/TeacherProfile";
 export { default as TeacherTestManagement } from "./protected/Teacher/TeacherTestManagement";
 export { default as TeacherSettings } from "./protected/Teacher/TeacherSettings";
+export { default as TestCreationPage } from "./protected/Teacher/TestCreationPage";
+export { default as StudentManagement } from "./protected/Teacher/StudentManagement";
 
 // Protected pages - Student
 export { default as StudentDashboard } from "./protected/Student/StudentDashboard";

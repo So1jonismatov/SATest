@@ -7,7 +7,7 @@ import {
   useEffect,
 } from "react";
 import { type AuthContextType, type User } from "@/types";
-import { mockApi as api } from "@/api/mock";
+import { api } from "@/api/simulation/v2";
 // import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 import { setCookie, getCookie, eraseCookie } from "@/function/cookies";
 
