@@ -14,116 +14,37 @@ import {
 } from "@/components/ui/dialog";
 import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
-import { type Test, type Question } from "@/types/index";
-import { Plus, Trash2, Eye, FileText, Search, ImagePlus, Users, UserCheck } from "lucide-react";
-import type { TestWithAccess, UserWithAccessList } from "@/api/real/types";
+import { type Test, type Question, type TestWithAccess } from "@/types/index";
+import {
+  Plus,
+  Trash2,
+  Eye,
+  FileText,
+  Search,
+  ImagePlus,
+  Users,
+} from "lucide-react";
 
 const TeacherTestManagement: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tests, setTests] = useState<TestWithAccess[]>([]);
-  const [users, setUsers] = useState<UserWithAccessList[]>([]);
   const [selectedTest, setSelectedTest] = useState<TestWithAccess | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isGrantAccessOpen, setIsGrantAccessOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [userSearchTerm, setUserSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [selectedTestForAccess, setSelectedTestForAccess] = useState<string | null>(null);
-
-  const [newTest, setNewTest] = useState<{
-    title: string;
-    subject?: string;
-    isPremium?: boolean;
-    questions?: any[];
-  }>({
-    title: "",
-    subject: "",
-    isPremium: false,
-    questions: [],
-  });
-
-  const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
-    text: "",
-    options: [],
-    correctAnswer: "",
-  });
 
   const fetchTests = async () => {
     try {
-      // For now, we'll simulate test data since the API isn't fully implemented
-      const mockTests: TestWithAccess[] = [
-        {
-          testId: "1",
-          nomi: "SAT Math Practice Test 1",
-          subject: "mathematics",
-          questionCount: 58,
-          isPremium: false,
-          hasAccess: true,
-          jami_urinishlar: 120,
-          average: 750.5
-        },
-        {
-          testId: "2",
-          nomi: "SAT Reading Practice Test 1",
-          subject: "reading",
-          questionCount: 52,
-          isPremium: false,
-          hasAccess: true,
-          jami_urinishlar: 95,
-          average: 680.0
-        },
-        {
-          testId: "3",
-          nomi: "Advanced SAT Math Test",
-          subject: "mathematics",
-          questionCount: 58,
-          isPremium: true,
-          hasAccess: false,
-          jami_urinishlar: 15,
-          average: 720.0
-        }
-      ];
-      setTests(mockTests);
+      const response = await api.student.getTests();
+      setTests(response.tests);
     } catch (error) {
       console.error("Error fetching tests:", error);
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      // For now, we'll simulate user data since the API isn't fully implemented
-      const mockUsers: UserWithAccessList[] = [
-        {
-          id: "1",
-          full_name: "John Doe",
-          email: "john@example.com",
-          access_list: ["1"]
-        },
-        {
-          id: "2",
-          full_name: "Jane Smith",
-          email: "jane@example.com",
-          access_list: ["1", "2"]
-        },
-        {
-          id: "3",
-          full_name: "Bob Johnson",
-          email: "bob@example.com",
-          access_list: []
-        }
-      ];
-      setUsers(mockUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
   useEffect(() => {
     fetchTests();
-    fetchUsers();
-  }, [user]);
+  }, []);
 
   const filteredTests = useMemo(
     () =>
@@ -136,122 +57,13 @@ const TeacherTestManagement: React.FC = () => {
     [tests, searchTerm],
   );
 
-  const filteredUsers = useMemo(
-    () =>
-      users.filter((usr) => {
-        const matchesSearch = usr.full_name
-          .toLowerCase()
-          .includes(userSearchTerm.toLowerCase()) ||
-          usr.email.toLowerCase().includes(userSearchTerm.toLowerCase());
-        return matchesSearch;
-      }),
-    [users, userSearchTerm],
-  );
-
   // ---------- Actions ----------
-  const handleCreateTest = async () => {
-    // For now, we'll just simulate creating a test
-    const newTestWithId: TestWithAccess = {
-      testId: `test-${Date.now()}`,
-      nomi: newTest.title || "New Test",
-      subject: newTest.subject || "mathematics",
-      questionCount: 0, // Initially no questions
-      isPremium: newTest.isPremium || false,
-      hasAccess: true,
-      jami_urinishlar: 0,
-      average: 0
-    };
-
-    setTests([...tests, newTestWithId]);
-
-    // Navigate to the new test creation page
-    navigate(`/admin/tests/${newTestWithId.testId}/edit`);
-
-    setNewTest({
-      title: "",
-      subject: "",
-      isPremium: false,
-    });
-    setIsCreateDialogOpen(false);
-  };
-
-  const handleAddQuestion = () => {
-    if (!newQuestion.text || !newQuestion.options || newQuestion.options.length === 0) {
-      return;
-    }
-
-    const q: Question = {
-      id: `q-${Date.now()}`,
-      text: newQuestion.text,
-      type: "multiple_choice",
-      options: newQuestion.options.map((opt, idx) => ({
-        key: String.fromCharCode(65 + idx), // A, B, C, D...
-        text: opt
-      })),
-      correctAnswer: newQuestion.correctAnswer || "A",
-    };
-
-    setNewTest((prev) => ({
-      ...prev,
-      questions: [...(prev.questions ?? []), q],
-    }));
-
-    setNewQuestion({
-      text: "",
-      options: [],
-      correctAnswer: "",
-    });
-  };
-
-  const handleRemoveQuestion = (qid: string) => {
-    setNewTest((prev) => ({
-      ...prev,
-      questions: prev.questions?.filter((q) => q.id !== qid) ?? [],
-    }));
-  };
-
-  const handleGrantAccess = async () => {
-    if (selectedUser && selectedTestForAccess) {
-      try {
-        // For now, simulate granting access
-        console.log(`Granting access to user ${selectedUser} for test ${selectedTestForAccess}`);
-
-        // Update the local state to reflect the access grant
-        const updatedUsers = users.map(user => {
-          if (user.id === selectedUser) {
-            const newAccessList = [...user.access_list, selectedTestForAccess];
-            return { ...user, access_list: newAccessList };
-          }
-          return user;
-        });
-
-        setUsers(updatedUsers);
-        setIsGrantAccessOpen(false);
-        setSelectedUser(null);
-        setSelectedTestForAccess(null);
-      } catch (error) {
-        console.error("Error granting access:", error);
-      }
-    }
-  };
-
-  const handleRevokeAccess = async (userId: string, testId: string) => {
+  const handleDeleteTest = async (testId: string) => {
     try {
-      // For now, simulate revoking access
-      console.log(`Revoking access from user ${userId} for test ${testId}`);
-
-      // Update the local state to reflect the access revocation
-      const updatedUsers = users.map(user => {
-        if (user.id === userId) {
-          const newAccessList = user.access_list.filter(id => id !== testId);
-          return { ...user, access_list: newAccessList };
-        }
-        return user;
-      });
-
-      setUsers(updatedUsers);
+      await api.teacher.deleteTest(testId);
+      fetchTests(); // Refresh the list of tests
     } catch (error) {
-      console.error("Error revoking access:", error);
+      console.error("Error deleting test:", error);
     }
   };
 
@@ -268,157 +80,10 @@ const TeacherTestManagement: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Dialog
-              open={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Test
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New SAT Test</DialogTitle>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="title">Test Title</Label>
-                      <Input
-                        id="title"
-                        value={newTest.title}
-                        onChange={(e) =>
-                          setNewTest({ ...newTest, title: e.target.value })
-                        }
-                        placeholder="Enter test title (e.g., SAT Math Practice Test)"
-                      />
-                    </div>
-                    <div>
-                      <Label>Subject</Label>
-                      <div className="flex border rounded-md overflow-hidden">
-                        <button
-                          className={`flex-1 py-2 px-4 ${
-                            (newTest.subject === 'mathematics' || !newTest.subject)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-background hover:bg-accent'
-                          }`}
-                          onClick={() => setNewTest({ ...newTest, subject: 'mathematics' })}
-                        >
-                          Mathematics
-                        </button>
-                        <button
-                          className={`flex-1 py-2 px-4 ${
-                            newTest.subject === 'reading'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-background hover:bg-accent'
-                          }`}
-                          onClick={() => setNewTest({ ...newTest, subject: 'reading' })}
-                        >
-                          Reading
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 pt-4">
-                    <Input
-                      type="checkbox"
-                      id="isPremium"
-                      checked={newTest.isPremium || false}
-                      onChange={(e) => setNewTest({ ...newTest, isPremium: e.target.checked })}
-                    />
-                    <Label htmlFor="isPremium">Premium Test (requires admin access)</Label>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-2 mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateTest}
-                    disabled={!newTest.title}
-                  >
-                    Create Test
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog
-              open={isGrantAccessOpen}
-              onOpenChange={setIsGrantAccessOpen}
-            >
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Grant Access
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Grant Test Access to Student</DialogTitle>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="test-select">Select Test</Label>
-                    <select
-                      id="test-select"
-                      className="w-full p-2 border rounded"
-                      value={selectedTestForAccess || ""}
-                      onChange={(e) => setSelectedTestForAccess(e.target.value)}
-                    >
-                      <option value="">Select a test</option>
-                      {tests.map(test => (
-                        <option key={test.testId} value={test.testId}>
-                          {test.nomi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="user-search">Search Student</Label>
-                    <Input
-                      id="user-search"
-                      placeholder="Search by name or email..."
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="max-h-60 overflow-y-auto border rounded">
-                    {filteredUsers.map(user => (
-                      <div
-                        key={user.id}
-                        className={`p-3 border-b cursor-pointer hover:bg-muted ${
-                          selectedUser === user.id ? 'bg-accent' : ''
-                        }`}
-                        onClick={() => setSelectedUser(user.id)}
-                      >
-                        <div className="font-medium">{user.full_name}</div>
-                        <div className="text-sm text-muted-foreground">{user.email}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button
-                    onClick={handleGrantAccess}
-                    disabled={!selectedUser || !selectedTestForAccess}
-                    className="w-full"
-                  >
-                    Grant Access
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => navigate("/admin/tests/new/edit")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Test
+            </Button>
           </div>
         </div>
 
@@ -440,7 +105,10 @@ const TeacherTestManagement: React.FC = () => {
         {/* Tests Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTests.map((test) => (
-            <Card key={test.testId} className="transition-shadow hover:shadow-md">
+            <Card
+              key={test.testId}
+              className="transition-shadow hover:shadow-md"
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -475,7 +143,9 @@ const TeacherTestManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-muted-foreground">Access:</span>
-                    <span className="font-medium">{test.hasAccess ? 'Yes' : 'No'}</span>
+                    <span className="font-medium">
+                      {test.hasAccess ? "Yes" : "No"}
+                    </span>
                   </div>
                 </div>
 
@@ -492,16 +162,23 @@ const TeacherTestManagement: React.FC = () => {
                     <Eye className="h-4 w-4 mr-1" />
                     View
                   </Button>
-
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setSelectedTestForAccess(test.testId);
-                      setIsGrantAccessOpen(true);
-                    }}
+                    className="flex-1"
+                    onClick={() => navigate(`/admin/tests/${test.testId}/edit`)}
                   >
-                    <UserCheck className="h-4 w-4" />
+                    <FileText className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleDeleteTest(test.testId)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>
@@ -520,16 +197,22 @@ const TeacherTestManagement: React.FC = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Subject:</span> {selectedTest.subject}
+                    <span className="text-muted-foreground">Subject:</span>{" "}
+                    {selectedTest.subject}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Questions:</span> {selectedTest.questionCount}
+                    <span className="text-muted-foreground">Questions:</span>{" "}
+                    {selectedTest.questionCount}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Attempts:</span> {selectedTest.jami_urinishlar}
+                    <span className="text-muted-foreground">Attempts:</span>{" "}
+                    {selectedTest.jami_urinishlar}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Average Score:</span> {selectedTest.average}
+                    <span className="text-muted-foreground">
+                      Average Score:
+                    </span>{" "}
+                    {selectedTest.average}
                   </div>
                 </div>
 
@@ -538,7 +221,8 @@ const TeacherTestManagement: React.FC = () => {
                     Test Information
                   </Label>
                   <p className="text-sm">
-                    This is a SAT practice test designed to help students prepare for the SAT exam.
+                    This is a SAT practice test designed to help students
+                    prepare for the SAT exam.
                   </p>
                 </div>
               </div>

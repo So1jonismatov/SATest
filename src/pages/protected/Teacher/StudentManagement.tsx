@@ -13,16 +13,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Trash2, UserPlus, UserX, Users, CheckCircle } from "lucide-react";
+import {
+  Search,
+  Trash2,
+  UserPlus,
+  UserX,
+  Users,
+  CheckCircle,
+} from "lucide-react";
 import type { UserWithAccessList, TestWithAccess } from "@/api/real/types";
-import { getUsers, deleteUser, grantAccess, revokeAccess, grantAllAccess, revokeAllAccess, addUser } from "@/api/admin";
-import { getTests } from "@/api/student";
+import { api } from "@/api/simulation/v2";
 
 const StudentManagement: React.FC = () => {
   const { user } = useAuth();
   const [students, setStudents] = useState<UserWithAccessList[]>([]);
   const [tests, setTests] = useState<TestWithAccess[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<UserWithAccessList | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
@@ -33,71 +41,20 @@ const StudentManagement: React.FC = () => {
     password: "",
   });
 
+  const selectedStudent = useMemo(() => {
+    if (!selectedStudentId) return null;
+    return students.find((s) => s.id === selectedStudentId);
+  }, [selectedStudentId, students]);
+
   // Fetch students and tests
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // In a real implementation, these would be actual API calls
-        // const studentsData = await getUsers(1, 100); // Get all users
-        // const testsData = await getTests(1, 100); // Get all tests
+        const studentsData = await api.teacher.getUsers();
+        const testsData = await api.student.getTests();
 
-        // For now, using mock data
-        const mockStudents: UserWithAccessList[] = [
-          {
-            id: "1",
-            full_name: "John Doe",
-            email: "john@example.com",
-            access_list: ["1", "2"]
-          },
-          {
-            id: "2",
-            full_name: "Jane Smith",
-            email: "jane@example.com",
-            access_list: ["1"]
-          },
-          {
-            id: "3",
-            full_name: "Bob Johnson",
-            email: "bob@example.com",
-            access_list: []
-          }
-        ];
-
-        const mockTests: TestWithAccess[] = [
-          {
-            testId: "1",
-            nomi: "SAT Math Practice Test 1",
-            subject: "mathematics",
-            questionCount: 58,
-            isPremium: false,
-            hasAccess: true,
-            jami_urinishlar: 120,
-            average: 750.5
-          },
-          {
-            testId: "2",
-            nomi: "SAT Reading Practice Test 1",
-            subject: "reading",
-            questionCount: 52,
-            isPremium: false,
-            hasAccess: true,
-            jami_urinishlar: 95,
-            average: 680.0
-          },
-          {
-            testId: "3",
-            nomi: "Advanced SAT Math Test",
-            subject: "mathematics",
-            questionCount: 58,
-            isPremium: true,
-            hasAccess: false,
-            jami_urinishlar: 15,
-            average: 720.0
-          }
-        ];
-
-        setStudents(mockStudents);
-        setTests(mockTests);
+        setStudents(studentsData.users);
+        setTests(testsData.tests);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -108,42 +65,55 @@ const StudentManagement: React.FC = () => {
 
   // Filter students based on search term
   const filteredStudents = useMemo(() => {
-    return students.filter(student => 
-      student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return students.filter(
+      (student) =>
+        student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [students, searchTerm]);
 
   // Handle access toggle for a specific test with optimistic updates
-  const handleAccessToggle = async (studentId: string, testId: string, hasAccess: boolean) => {
+  const handleAccessToggle = async (
+    studentId: string,
+    testId: string,
+    currentlyHasAccess: boolean,
+  ) => {
     // Optimistically update the UI
-    setStudents(prev => prev.map(student =>
-      student.id === studentId
-        ? { ...student, access_list: hasAccess
-            ? student.access_list.filter(id => id !== testId)
-            : [...student.access_list, testId]
-          }
-        : student
-    ));
+    setStudents((prev) =>
+      prev.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              access_list: currentlyHasAccess
+                ? student.access_list.filter((id) => id !== testId)
+                : [...student.access_list, testId],
+            }
+          : student,
+      ),
+    );
 
     try {
-      if (hasAccess) {
+      if (currentlyHasAccess) {
         // Revoke access
-        await revokeAccess(studentId, testId);
+        await api.teacher.revokeAccess({ userId: studentId, testId });
       } else {
         // Grant access
-        await grantAccess({ userId: studentId, testId });
+        await api.teacher.grantAccess({ userId: studentId, testId });
       }
     } catch (error) {
       // If API call fails, revert the optimistic update
-      setStudents(prev => prev.map(student =>
-        student.id === studentId
-          ? { ...student, access_list: hasAccess
-              ? [...student.access_list, testId] // Add back if we were removing
-              : student.access_list.filter(id => id !== testId) // Remove if we were adding
-            }
-          : student
-      ));
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.id === studentId
+            ? {
+                ...student,
+                access_list: currentlyHasAccess
+                  ? [...student.access_list, testId] // Add back if we were removing
+                  : student.access_list.filter((id) => id !== testId), // Remove if we were adding
+              }
+            : student,
+        ),
+      );
       console.error("Error toggling access:", error);
     }
   };
@@ -151,12 +121,17 @@ const StudentManagement: React.FC = () => {
   // Handle granting all access
   const handleGrantAllAccess = async (studentId: string) => {
     try {
-      await grantAllAccess(studentId);
-      setStudents(prev => prev.map(student =>
-        student.id === studentId
-          ? { ...student, access_list: tests.map(t => t.testId) }
-          : student
-      ));
+      const grantPromises = tests.map((test) =>
+        api.teacher.grantAccess({ userId: studentId, testId: test.testId }),
+      );
+      await Promise.all(grantPromises);
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.id === studentId
+            ? { ...student, access_list: tests.map((t) => t.testId) }
+            : student,
+        ),
+      );
     } catch (error) {
       console.error("Error granting all access:", error);
     }
@@ -165,24 +140,28 @@ const StudentManagement: React.FC = () => {
   // Handle revoking all access
   const handleRevokeAllAccess = async (studentId: string) => {
     try {
-      await revokeAllAccess(studentId);
-      setStudents(prev => prev.map(student => 
-        student.id === studentId 
-          ? { ...student, access_list: [] } 
-          : student
-      ));
+      const revokePromises = tests.map((test) =>
+        api.teacher.revokeAccess({ userId: studentId, testId: test.testId }),
+      );
+      await Promise.all(revokePromises);
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.id === studentId ? { ...student, access_list: [] } : student,
+        ),
+      );
     } catch (error) {
       console.error("Error revoking all access:", error);
     }
   };
-
   // Handle student deletion
   const handleDeleteStudent = async () => {
     if (!studentToDelete) return;
-    
+
     try {
-      await deleteUser(studentToDelete);
-      setStudents(prev => prev.filter(student => student.id !== studentToDelete));
+      await api.teacher.deleteUser(studentToDelete);
+      setStudents((prev) =>
+        prev.filter((student) => student.id !== studentToDelete),
+      );
       setIsDeleteDialogOpen(false);
       setStudentToDelete(null);
     } catch (error) {
@@ -193,24 +172,14 @@ const StudentManagement: React.FC = () => {
   // Handle adding a new student
   const handleAddStudent = async () => {
     try {
-      // In a real implementation, this would call the API
-      // await addUser({
-      //   email: newStudent.email,
-      //   password: newStudent.password,
-      //   full_name: newStudent.full_name,
-      //   role: 'student'
-      // });
-
-      // For now, mock implementation
-      const newStudentObj = {
-        id: `student-${Date.now()}`,
-        full_name: newStudent.full_name,
+      const addedStudent = await api.teacher.addUser({
         email: newStudent.email,
-        role: "student" as const,
-        access_list: []
-      };
+        password: newStudent.password,
+        full_name: newStudent.full_name,
+        role: "student",
+      });
 
-      setStudents([...students, newStudentObj]);
+      setStudents([...students, addedStudent]);
       setIsAddStudentDialogOpen(false);
       setNewStudent({ full_name: "", email: "", password: "" });
     } catch (error) {
@@ -232,7 +201,10 @@ const StudentManagement: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
+            <Dialog
+              open={isAddStudentDialogOpen}
+              onOpenChange={setIsAddStudentDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -249,7 +221,12 @@ const StudentManagement: React.FC = () => {
                     <Input
                       id="full_name"
                       value={newStudent.full_name}
-                      onChange={(e) => setNewStudent({...newStudent, full_name: e.target.value})}
+                      onChange={(e) =>
+                        setNewStudent({
+                          ...newStudent,
+                          full_name: e.target.value,
+                        })
+                      }
                       placeholder="Enter student's full name"
                     />
                   </div>
@@ -259,7 +236,9 @@ const StudentManagement: React.FC = () => {
                       id="email"
                       type="email"
                       value={newStudent.email}
-                      onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
+                      onChange={(e) =>
+                        setNewStudent({ ...newStudent, email: e.target.value })
+                      }
                       placeholder="Enter student's email"
                     />
                   </div>
@@ -269,7 +248,12 @@ const StudentManagement: React.FC = () => {
                       id="password"
                       type="password"
                       value={newStudent.password}
-                      onChange={(e) => setNewStudent({...newStudent, password: e.target.value})}
+                      onChange={(e) =>
+                        setNewStudent({
+                          ...newStudent,
+                          password: e.target.value,
+                        })
+                      }
                       placeholder="Enter password"
                     />
                   </div>
@@ -314,19 +298,21 @@ const StudentManagement: React.FC = () => {
             <CardContent className="flex-1 overflow-y-auto">
               <div className="space-y-3">
                 {filteredStudents.map((student) => (
-                  <div 
+                  <div
                     key={student.id}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedStudent?.id === student.id 
-                        ? 'border-primary bg-primary/5' 
-                        : 'hover:bg-muted'
+                      selectedStudentId === student.id
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted"
                     }`}
-                    onClick={() => setSelectedStudent(student)}
+                    onClick={() => setSelectedStudentId(student.id)}
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-medium">{student.full_name}</h3>
-                        <p className="text-sm text-muted-foreground">{student.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {student.email}
+                        </p>
                         <div className="flex gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
                             Tests: {student.access_list.length}
@@ -383,10 +369,12 @@ const StudentManagement: React.FC = () => {
             <CardContent className="flex-1 overflow-y-auto">
               {selectedStudent ? (
                 <div>
-                  <h3 className="font-medium mb-4">Managing: {selectedStudent.full_name}</h3>
+                  <h3 className="font-medium mb-4">
+                    Managing: {selectedStudent.full_name}
+                  </h3>
                   <div className="space-y-3">
                     {tests.map((test) => (
-                      <div 
+                      <div
                         key={test.testId}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
@@ -401,12 +389,16 @@ const StudentManagement: React.FC = () => {
                             <Badge variant="secondary">Premium</Badge>
                           )}
                           <Checkbox
-                            checked={selectedStudent.access_list.includes(test.testId)}
+                            checked={selectedStudent.access_list.includes(
+                              test.testId,
+                            )}
                             onCheckedChange={(checked) =>
                               handleAccessToggle(
                                 selectedStudent.id,
                                 test.testId,
-                                Boolean(checked)
+                                selectedStudent.access_list.includes(
+                                  test.testId,
+                                ), // Current state before change
                               )
                             }
                           />
@@ -430,18 +422,18 @@ const StudentManagement: React.FC = () => {
             <DialogHeader>
               <DialogTitle>Confirm Deletion</DialogTitle>
             </DialogHeader>
-            <p>Are you sure you want to delete this student? This action cannot be undone.</p>
+            <p>
+              Are you sure you want to delete this student? This action cannot
+              be undone.
+            </p>
             <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsDeleteDialogOpen(false)}
               >
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteStudent}
-              >
+              <Button variant="destructive" onClick={handleDeleteStudent}>
                 Delete
               </Button>
             </div>

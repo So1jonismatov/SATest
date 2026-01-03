@@ -1,7 +1,13 @@
 // src/api/simulation/v2/index.ts
 
 import type { Test, TestAnswer, Question } from "@/types";
-import type { TestWithAccess, PaginatedTests, UserAccess, UserWithAccessList, PaginatedUsers } from "../real/types";
+import type {
+  TestWithAccess,
+  PaginatedTests,
+  UserAccess,
+  UserWithAccessList,
+  PaginatedUsers,
+} from "../real/types";
 
 // Simulate API latency
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -12,27 +18,30 @@ const inMemoryDb = {
     {
       id: "1",
       name: "John Doe",
-      email: "john@example.com",
+      email: "test@example.com",
       role: "student",
-      phone: "john@example.com",
-      status: "Active"
+      phone: "test@example.com",
+      status: "Active",
+      password: "password123", // Hashed in real implementation
     },
     {
       id: "2",
       name: "Jane Smith",
-      email: "jane@example.com",
-      role: "student",
-      phone: "jane@example.com",
-      status: "Active"
+      email: "admin@example.com",
+      role: "teacher",
+      phone: "admin@example.com",
+      status: "Active",
+      password: "admin123", // Hashed in real implementation
     },
     {
       id: "3",
       name: "Bob Johnson",
       email: "bob@example.com",
-      role: "teacher",
+      role: "student",
       phone: "bob@example.com",
-      status: "Active"
-    }
+      status: "Active",
+      password: "password123",
+    },
   ],
   tests: [
     {
@@ -43,7 +52,7 @@ const inMemoryDb = {
       isPremium: false,
       hasAccess: true,
       jami_urinishlar: 120,
-      average: 750.5
+      average: 750.5,
     },
     {
       testId: "2",
@@ -53,7 +62,7 @@ const inMemoryDb = {
       isPremium: false,
       hasAccess: true,
       jami_urinishlar: 95,
-      average: 680.0
+      average: 680.0,
     },
     {
       testId: "3",
@@ -63,49 +72,51 @@ const inMemoryDb = {
       isPremium: true,
       hasAccess: false,
       jami_urinishlar: 15,
-      average: 720.0
-    }
+      average: 720.0,
+    },
   ],
   userAccess: [
     {
       userId: "1",
-      testId: "1"
+      testId: "1",
     },
     {
       userId: "2",
-      testId: "1"
+      testId: "1",
     },
     {
       userId: "2",
-      testId: "2"
-    }
+      testId: "2",
+    },
   ],
   questions: [
     {
       id: "q1",
+      testId: "1",
       text: "What is the value of x in the equation 2x + 3 = 7?",
       type: "multiple_choice",
       options: [
         { key: "A", text: "1" },
         { key: "B", text: "2" },
         { key: "C", text: "3" },
-        { key: "D", text: "4" }
+        { key: "D", text: "4" },
       ],
-      correctAnswer: "B"
+      correctAnswer: "B",
     },
     {
       id: "q2",
+      testId: "1",
       text: "Which of the following is the main idea of the passage?",
       type: "multiple_choice",
       options: [
         { key: "A", text: "Option A" },
         { key: "B", text: "Option B" },
         { key: "C", text: "Option C" },
-        { key: "D", text: "Option D" }
+        { key: "D", text: "Option D" },
       ],
-      correctAnswer: "A"
-    }
-  ]
+      correctAnswer: "A",
+    },
+  ],
 };
 
 // =================================================================================================
@@ -113,7 +124,12 @@ const inMemoryDb = {
 // =================================================================================================
 
 export const authAPI = {
-  async register(userData: { email: string; password: string; full_name: string; role?: "student" }): Promise<{ user: any; token: string }> {
+  async register(userData: {
+    email: string;
+    password: string;
+    full_name: string;
+    role?: "student";
+  }): Promise<{ user: any; token: string }> {
     await delay(500);
 
     const newUser = {
@@ -122,7 +138,8 @@ export const authAPI = {
       email: userData.email,
       role: userData.role || "student",
       phone: userData.email,
-      status: "Active"
+      status: "Active",
+      password: userData.password,
     };
 
     inMemoryDb.users.push(newUser);
@@ -133,11 +150,15 @@ export const authAPI = {
     return { user: newUser, token };
   },
 
-  async login(credentials: { email: string; password: string }): Promise<{ user: any; token: string }> {
+  async login(credentials: {
+    email: string;
+    password: string;
+  }): Promise<{ user: any; token: string }> {
     await delay(500);
 
     const user = inMemoryDb.users.find(
-      u => u.email === credentials.email
+      (u) =>
+        u.email === credentials.email && u.password === credentials.password,
     );
 
     if (!user) {
@@ -165,7 +186,11 @@ export const authAPI = {
 // =================================================================================================
 
 const studentAPI = {
-  async getTests(params?: { page?: number; limit?: number; subject?: string }): Promise<PaginatedTests> {
+  async getTests(params?: {
+    page?: number;
+    limit?: number;
+    subject?: string;
+  }): Promise<PaginatedTests> {
     await delay(500);
 
     const page = params?.page || 1;
@@ -175,7 +200,7 @@ const studentAPI = {
     let filteredTests = inMemoryDb.tests;
 
     if (subject) {
-      filteredTests = filteredTests.filter(test => test.subject === subject);
+      filteredTests = filteredTests.filter((test) => test.subject === subject);
     }
 
     const totalTests = filteredTests.length;
@@ -189,31 +214,40 @@ const studentAPI = {
       page,
       totalPages,
       totalTests,
-      tests: paginatedTests
+      tests: paginatedTests,
     };
   },
 
-  async getTest(testId: string): Promise<{ testId: string; title: string; subject: string; questions: Question[] }> {
+  async getTest(testId: string): Promise<any> {
     await delay(300);
 
-    const test = inMemoryDb.tests.find(t => t.testId === testId);
+    const test = inMemoryDb.tests.find((t) => t.testId === testId);
 
     if (!test) {
       throw new Error("Test not found");
     }
 
+    const currentUser = authAPI.getCurrentUser();
+    const hasAccess = inMemoryDb.userAccess.some(
+      (ua) => ua.userId === currentUser?.user.id && ua.testId === testId,
+    );
+
     // Return the questions for this test
-    const questions = inMemoryDb.questions.filter(q => q.id.startsWith(testId));
+    const questions = inMemoryDb.questions.filter((q) => q.testId === testId);
 
     return {
-      testId,
+      ...test,
       title: test.nomi,
-      subject: test.subject,
-      questions: questions.length > 0 ? questions : inMemoryDb.questions.slice(0, 3) // fallback to sample questions
+      questions:
+        questions.length > 0 ? questions : inInMemoryDb.questions.slice(0, 3), // fallback to sample questions
+      hasAccess: hasAccess || !test.isPremium, // Non-premium tests are always accessible
     };
   },
 
-  async submitTest(testId: string, submission: { score: number }): Promise<any> {
+  async submitTest(
+    testId: string,
+    submission: { score: number },
+  ): Promise<any> {
     await delay(500);
 
     // In a real app, this would update test statistics
@@ -239,7 +273,7 @@ const teacherAPI = {
       isPremium: testData.isPremium || false,
       hasAccess: true,
       jami_urinishlar: 0,
-      average: 0
+      average: 0,
     };
 
     inMemoryDb.tests.push(newTest);
@@ -247,12 +281,57 @@ const teacherAPI = {
     return newTest;
   },
 
+  async deleteTest(testId: string): Promise<any> {
+    await delay(300);
+
+    const index = inMemoryDb.tests.findIndex((test) => test.testId === testId);
+
+    if (index !== -1) {
+      inMemoryDb.tests.splice(index, 1);
+
+      // Also remove questions associated with this test
+      inMemoryDb.questions = inMemoryDb.questions.filter(
+        (q) => !q.id.startsWith(testId),
+      );
+    }
+
+    return { success: true, message: "Test deleted successfully" };
+  },
+
+  async updateTest(testId: string, testData: any): Promise<any> {
+    await delay(300);
+
+    const testIndex = inMemoryDb.tests.findIndex(
+      (test) => test.testId === testId,
+    );
+
+    if (testIndex !== -1) {
+      inMemoryDb.tests[testIndex] = {
+        ...inMemoryDb.tests[testIndex],
+        ...testData,
+      };
+    }
+
+    return { success: true, message: "Test updated successfully" };
+  },
+
+  async getTest(testId: string): Promise<any> {
+    await delay(300);
+    const test = inMemoryDb.tests.find((t) => t.testId === testId);
+    if (!test) {
+      throw new Error("Test not found");
+    }
+    const questions = inMemoryDb.questions.filter((q) => q.testId === testId);
+    return { ...test, title: test.nomi, questions };
+  },
+
   async grantAccess(accessData: UserAccess): Promise<any> {
     await delay(300);
 
     // Check if access already exists
     const existingAccess = inMemoryDb.userAccess.find(
-      ua => ua.userId === accessData.userId && ua.testId === accessData.testId
+      (ua) =>
+        ua.userId === accessData.userId && ua.testId === accessData.testId,
     );
 
     if (!existingAccess) {
@@ -266,7 +345,8 @@ const teacherAPI = {
     await delay(300);
 
     const index = inMemoryDb.userAccess.findIndex(
-      ua => ua.userId === accessData.userId && ua.testId === accessData.testId
+      (ua) =>
+        ua.userId === accessData.userId && ua.testId === accessData.testId,
     );
 
     if (index !== -1) {
@@ -279,7 +359,7 @@ const teacherAPI = {
   async getUser(userId: string): Promise<UserWithAccessList> {
     await delay(300);
 
-    const user = inMemoryDb.users.find(u => u.id === userId);
+    const user = inMemoryDb.users.find((u) => u.id === userId);
 
     if (!user) {
       throw new Error("User not found");
@@ -287,30 +367,35 @@ const teacherAPI = {
 
     // Get user's access list
     const accessList = inMemoryDb.userAccess
-      .filter(ua => ua.userId === userId)
-      .map(ua => ua.testId);
+      .filter((ua) => ua.userId === userId)
+      .map((ua) => ua.testId);
 
     return {
       id: user.id,
       full_name: user.name,
       email: user.email,
-      access_list: accessList
+      access_list: accessList,
     };
   },
 
-  async getUsers(params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedUsers> {
+  async getUsers(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<PaginatedUsers> {
     await delay(500);
 
     const page = params?.page || 1;
     const limit = params?.limit || 10;
     const search = params?.search;
 
-    let filteredUsers = inMemoryDb.users.filter(u => u.role === "student");
+    let filteredUsers = inMemoryDb.users.filter((u) => u.role === "student");
 
     if (search) {
       filteredUsers = filteredUsers.filter(
-        u => u.name.toLowerCase().includes(search.toLowerCase()) ||
-             u.email.toLowerCase().includes(search.toLowerCase())
+        (u) =>
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
@@ -319,23 +404,25 @@ const teacherAPI = {
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
 
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex).map(user => {
-      const accessList = inMemoryDb.userAccess
-        .filter(ua => ua.userId === user.id)
-        .map(ua => ua.testId);
+    const paginatedUsers = filteredUsers
+      .slice(startIndex, endIndex)
+      .map((user) => {
+        const accessList = inMemoryDb.userAccess
+          .filter((ua) => ua.userId === user.id)
+          .map((ua) => ua.testId);
 
-      return {
-        id: user.id,
-        full_name: user.name,
-        email: user.email,
-        access_list: accessList
-      };
-    });
+        return {
+          id: user.id,
+          full_name: user.name,
+          email: user.email,
+          access_list: accessList,
+        };
+      });
 
     return {
       users: paginatedUsers,
       total,
-      page
+      page,
     };
   },
 };

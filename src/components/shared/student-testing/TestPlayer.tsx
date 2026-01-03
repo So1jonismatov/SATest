@@ -1,5 +1,5 @@
 import type { Test } from "@/types/index";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Timer } from "./Timer";
 import { QuestionNavigation } from "./QuestionNavigation";
-import { PanelLeft, Loader2 } from "lucide-react";
+import { PanelLeft, Loader2, Calculator } from "lucide-react";
+import MathTextRenderer from "@/components/shared/math/MathTextRenderer";
+import DesmosCalculator from "@/components/shared/math/DesmosCalculator";
 
 interface TestPlayerProps {
   test: Test;
@@ -27,6 +29,28 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isQuestionListOpen, setIsQuestionListOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(
+    test.subject === "mathematics",
+  );
+  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const updateScreenSize = () => {
+      setScreenSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    // Set initial size
+    updateScreenSize();
+
+    // Add event listener
+    window.addEventListener("resize", updateScreenSize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", updateScreenSize);
+  }, []);
 
   const handleFinishTest = async () => {
     if (isSubmitting) return;
@@ -105,17 +129,25 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
             >
               Exit
             </Button>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-semibold hidden sm:block">
               Question {currentQuestionIndex + 1} of {test.questions.length}
             </h2>
           </div>
 
-          {/* Right side: Timer + Mobile Nav Button */}
+          {/* Right side: Timer + Mobile Nav Button + Calculator */}
           <div className="flex items-center gap-4">
             <Timer
               initialSeconds={3600} // Placeholder
               onTimeUp={handleFinishTest}
             />
+            <Button
+              variant={showCalculator ? "default" : "outline"}
+              size="icon"
+              onClick={() => setShowCalculator(!showCalculator)}
+              disabled={isSubmitting}
+            >
+              <Calculator className="h-4 w-4" />
+            </Button>
             <Dialog
               open={isQuestionListOpen}
               onOpenChange={setIsQuestionListOpen}
@@ -152,36 +184,41 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
       </div>
 
       {/* --- Image + Question Side by Side --- */}
-      <div className="flex w-full max-w-7xl gap-6 md:flex-row flex-col">
-        <Card className="flex flex-col flex-1 w-full">
+      <div className="w-full max-w-7xl">
+        <Card className="flex flex-col w-full">
           <CardHeader>
-            <CardTitle>{currentQuestion.text}</CardTitle>
+            <CardTitle className="text-lg md:text-xl">
+              <MathTextRenderer text={currentQuestion.text} />
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex-grow">
-            <div className="flex md:flex-row flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {currentQuestion.imageUrl && (
-                <div className="md:w-1/4 w-full">
+                <div className="w-full">
                   <img
                     src={currentQuestion.imageUrl}
                     alt="Question illustration"
-                    className="rounded-lg object-cover w-full"
+                    className="rounded-lg object-contain max-h-60 w-full"
                   />
                 </div>
               )}
-              <div
-                className={
-                  currentQuestion.imageUrl ? "md:w-3/4 w-full" : "w-full"
-                }
-              >
-                <div className="space-y-4">
-                  {(currentQuestion.answers || currentQuestion.options || []).map((answer) => (
+              <div className="w-full">
+                <div className="space-y-3">
+                  {(
+                    currentQuestion.answers ||
+                    currentQuestion.options ||
+                    []
+                  ).map((answer) => (
                     <div
                       key={answer.id || answer.key}
                       onClick={() =>
                         !isSubmitting &&
-                        handleAnswerSelect(currentQuestion.id, answer.id || answer.key)
+                        handleAnswerSelect(
+                          currentQuestion.id,
+                          answer.id || answer.key,
+                        )
                       }
-                      className={`flex items-center p-4 border rounded-md transition-colors ${
+                      className={`flex items-start p-3 sm:p-4 border rounded-md transition-colors ${
                         selectedAnswer === (answer.id || answer.key)
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-accent"
@@ -193,12 +230,17 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                         value={answer.id || answer.key}
                         checked={selectedAnswer === (answer.id || answer.key)}
                         onChange={() =>
-                          handleAnswerSelect(currentQuestion.id, answer.id || answer.key)
+                          handleAnswerSelect(
+                            currentQuestion.id,
+                            answer.id || answer.key,
+                          )
                         }
                         disabled={isSubmitting}
-                        className="mr-4 h-4 w-4 accent-primary"
+                        className="mt-1 mr-3 sm:mr-4 h-4 w-4 accent-primary"
                       />
-                      <span className="flex-1">{answer.text}</span>
+                      <span className="flex-1 text-sm sm:text-base">
+                        <MathTextRenderer text={answer.text} />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -207,6 +249,28 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Desmos Calculator - only shown when enabled */}
+      {showCalculator && (
+        <div className="w-full max-w-7xl mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Desmos Calculator
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full h-96">
+                <DesmosCalculator
+                  width={screenSize.width > 768 ? 800 : screenSize.width - 40}
+                  height={screenSize.width > 768 ? 350 : 250}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* --- Navigation Buttons --- */}
       <div className="flex w-full max-w-7xl justify-between">

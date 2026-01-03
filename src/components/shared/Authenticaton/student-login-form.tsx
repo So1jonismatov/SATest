@@ -36,22 +36,9 @@ export function StudentLoginForm({
   const onSubmit = async (values: z.infer<typeof StudentLoginSchema>) => {
     try {
       enterFullscreen();
-      // For now, just accept any credentials since we're focusing on the app structure
-      // In a real implementation, we'd call the actual API
-      console.log("Login data:", values);
-
-      // Simulate a successful login response
-      const mockUser = {
-        id: "1",
-        name: "John Doe",
-        email: values.email,
-        role: "student"
-      };
-
-      const mockToken = "mock-jwt-token";
-
-      authLogin(mockUser, mockToken);
-      const redirectPath = getRedirectPath(mockUser);
+      const { user, token } = await api.auth.login(values);
+      authLogin(user, token);
+      const redirectPath = getRedirectPath(user);
       navigate(redirectPath);
     } catch (error) {
       const errorMessage =

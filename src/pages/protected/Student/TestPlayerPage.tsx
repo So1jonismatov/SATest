@@ -4,17 +4,40 @@ import { type Test } from "@/types";
 import { TestPlayer } from "@/components/shared/student-testing/TestPlayer";
 import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const TestPlayerPage = () => {
   const { testId } = useParams<{ testId: string }>();
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [test, setTest] = useState<Test | undefined>(undefined);
+  const [test, setTest] = useState<any | undefined>(undefined); // Using any to access additional properties
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (testId) {
-      api.student.getTest(testId).then(setTest);
-    }
+    const fetchTest = async () => {
+      if (testId) {
+        try {
+          const testResponse = await api.student.getTest(testId);
+
+          // Check if the user has access to this test
+          if (testResponse.isPremium && !testResponse.hasAccess) {
+            setError("access_denied");
+            setLoading(false);
+            return;
+          }
+
+          setTest(testResponse);
+        } catch (err) {
+          console.error("Error fetching test:", err);
+          setError("not_found");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTest();
   }, [testId, token]);
 
   const handleSubmitTest = async (
@@ -60,7 +83,7 @@ const TestPlayerPage = () => {
     }
   };
 
-  if (test === undefined) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         Loading test...
@@ -68,10 +91,34 @@ const TestPlayerPage = () => {
     );
   }
 
-  if (!test) {
+  if (error === "access_denied") {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        Test not found. It may have been taken or does not exist.
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Access Required</h2>
+          <p className="mb-6 text-muted-foreground">
+            This is a premium test. You need to purchase premium access to take this test.
+          </p>
+          <Button onClick={() => navigate('/payment')}>
+            Go to Payment
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error === "not_found" || !test) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Test Not Found</h2>
+          <p className="mb-6 text-muted-foreground">
+            The test you're looking for doesn't exist or may have been removed.
+          </p>
+          <Button onClick={() => navigate('/')}>
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }

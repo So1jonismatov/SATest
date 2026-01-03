@@ -137,6 +137,12 @@ export interface TeacherTestResult {
   answers: StudentAnswer[];
 }
 
+export interface UserAccess {
+  userId: string;
+  testId: string;
+}
+
+
 // ========= HOMEWORK TYPES =========
 export type HomeworkStatus = "Pending" | "Submitted" | "Graded" | "Overdue";
 export type DisplayStatus = HomeworkStatus | TestStatus | UserStatus;

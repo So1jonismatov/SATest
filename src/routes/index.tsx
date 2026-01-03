@@ -10,6 +10,7 @@ import {
   StudentManagement,
   StudentProfile,
   StudentSettings,
+  PaymentPage,
   TestCreationPage,
   TestPlayerPage,
   TestResultPage,
@@ -53,6 +54,15 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [{ path: "", element: <StudentSettings /> }],
+  },
+  {
+    path: "/payment",
+    element: (
+      <ProtectedRoute allowedRoles={["student"]}>
+        <HomePageLayout />
+      </ProtectedRoute>
+    ),
+    children: [{ path: "", element: <PaymentPage /> }],
   },
 
   // Student Test Routes (with main layout)

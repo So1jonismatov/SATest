@@ -66,17 +66,6 @@ export interface Test {
   questions: Question[];
 }
 
-export interface TestWithAccess {
-  testId: string;
-  nomi: string; // name
-  subject: string;
-  questionCount: number;
-  isPremium: boolean;
-  hasAccess: boolean;
-  jami_urinishlar: number; // total attempts
-  average: number;
-}
-
 export interface PaginatedTests {
   page: number;
   totalPages: number;
@@ -86,18 +75,6 @@ export interface PaginatedTests {
 
 export interface TestSubmission {
   score: number;
-}
-
-export interface UserAccess {
-  userId: string;
-  testId: string;
-}
-
-export interface UserWithAccessList {
-  id: string;
-  full_name: string;
-  email: string;
-  access_list: string[]; // array of testId
 }
 
 export interface PaginatedUsers {

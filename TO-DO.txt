@@ -1,5 +1,27 @@
-Admin Panel uylash
-asfasdfasdf
-asd
-fa
-asdfasdf
+i will give the routes and the things needs to be done on these pages that are located on the routes
+
+/
+1. page for the payment,
+2. tests filtering
+3. pagination on sat tests
+4 implement login and register pages
+5. implement account settings page for changing email name and purchasing premium or purchasing certain test
+
+/test
+1. integrate desmos api with
+2. make it mobile friendly
+3. mathjax support
+4. show the results after submitting, calculate the answers in the frontend and just submit the results
+5. access required tests, if no acces is given go to the purchase test page
+
+
+/admin/tests
+1. create new test modal make it beautiful
+2. delete the grant acess button and the modal
+3 fix the test creation window i need to press add button twice to add one question and the question text is not entering, also make that there is a ability to add or remove options too
+4. make test creation, deletion and updation possible, at least we need mvp and make it work on the front end
+
+/admin/students
+can you fix the errors in thes page when i select students tests will appear with checkboxes, i need to be able to give access to tests here but i cant activate deactivate the checkboxes
+
+can you add and implement the dummy but kinda working auth system, and add two accounts test@example.com and admin@example.com with some example passwords and make it usable

@@ -40,24 +40,10 @@ export function RegisterForm({
 
   const onSubmit = async (values: z.infer<typeof StudentRegisterSchema>) => {
     try {
-      // For now, we'll just simulate successful registration
-      // In a real implementation, we'd call the actual API
-      console.log("Registration data:", {
-        ...values,
-        role: "student"
-      });
-
-      // Simulate login after registration
-      const loginResult = await api.auth.login({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (loginResult) {
-        authLogin(loginResult.user, loginResult.token);
-        const redirectPath = getRedirectPath(loginResult.user);
-        navigate(redirectPath);
-      }
+      const { user, token } = await api.auth.register(values);
+      authLogin(user, token);
+      const redirectPath = getRedirectPath(user);
+      navigate(redirectPath);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred.";
