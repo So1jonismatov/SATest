@@ -32,8 +32,14 @@ const TestResultPage = () => {
 
   const getOptionText = (questionId: string, optionKey: string) => {
     const question = test?.questions.find((q) => q.id === questionId);
-    const option = question?.options.find((o: any) => o.key === optionKey);
-    return option?.text || "";
+    if (!question?.options) return "";
+    const option = question.options.find((o: any) => o && typeof o === 'object' && o.key === optionKey);
+    if (!option) return "";
+    if (typeof option === 'string') {
+      return option;
+    } else {
+      return (option as any)?.text || "";
+    }
   };
 
   return (
@@ -88,14 +94,14 @@ const TestResultPage = () => {
                       <p>
                         <strong>Your answer:</strong>{" "}
                         <MathTextRenderer
-                          text={getOptionText(question.id, userAnswer)}
+                          text={getOptionText(question.id, userAnswer || "")}
                         />
                       </p>
                       {!isCorrect && (
                         <p>
                           <strong>Correct answer:</strong>{" "}
                           <MathTextRenderer
-                            text={getOptionText(question.id, correctAnswer)}
+                            text={getOptionText(question.id, correctAnswer || "")}
                           />
                         </p>
                       )}

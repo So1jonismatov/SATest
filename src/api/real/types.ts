@@ -77,8 +77,33 @@ export interface TestSubmission {
   score: number;
 }
 
+export interface TestWithAccess {
+  testId: string;
+  nomi: string;
+  subject: string;
+  questionCount: number;
+  isPremium: boolean;
+  hasAccess: boolean;
+  jami_urinishlar: number;
+  average: number;
+}
+
+export interface UserAccess {
+  userId: string;
+  testId: string;
+  accessLevel: string; // or whatever access level type should be
+}
+
+export interface UserWithAccessList {
+  id: string;
+  full_name: string;
+  email: string;
+  access_list: string[];
+}
+
 export interface PaginatedUsers {
   users: UserWithAccessList[];
   total: number;
   page: number;
+  totalPages: number;
 }

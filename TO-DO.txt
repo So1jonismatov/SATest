@@ -1,27 +1,158 @@
-i will give the routes and the things needs to be done on these pages that are located on the routes
+baseUrl: https://satbackend-production.up.railway.app
+Users:
 
-/
-1. page for the payment,
-2. tests filtering
-3. pagination on sat tests
-4 implement login and register pages
-5. implement account settings page for changing email name and purchasing premium or purchasing certain test
+- POST /user
+creates new user 
+  body:
+    {
+    "email":"abdullohaziz559@gmail.com",
+    "password":"1234"
+     }
 
-/test
-1. integrate desmos api with
-2. make it mobile friendly
-3. mathjax support
-4. show the results after submitting, calculate the answers in the frontend and just submit the results
-5. access required tests, if no acces is given go to the purchase test page
+- GET /user
+gets all users
+example returnval: 
+[
+    {
+        "id": 2,
+        "email": "abdullohaziz559@gmail.com",
+        "full_name": null,
+        "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
+        "role": "student",
+        "created_at": "2025-12-29T16:35:10.234Z",
+        "updated_at": "2025-12-29T16:35:10.234Z",
+        "userAccesses": [],
+        "userInfos": []
+    }
+    , ....
+]
 
+-GET /user/{id}
+gets user by id
+returnval:
+{
+    "id": 2,
+    "email": "abdullohaziz559@gmail.com",
+    "full_name": null,
+    "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
+    "role": "student",
+    "created_at": "2025-12-29T16:35:10.234Z",
+    "updated_at": "2025-12-29T16:35:10.234Z",
+    "userAccesses": [],
+    "userInfos": []
+}
 
-/admin/tests
-1. create new test modal make it beautiful
-2. delete the grant acess button and the modal
-3 fix the test creation window i need to press add button twice to add one question and the question text is not entering, also make that there is a ability to add or remove options too
-4. make test creation, deletion and updation possible, at least we need mvp and make it work on the front end
+-PATCH /user/{id}
+updates user by id
+body can be anything like
+{
+    "full_name":"Abdullohaziz"
+}
 
-/admin/students
-can you fix the errors in thes page when i select students tests will appear with checkboxes, i need to be able to give access to tests here but i cant activate deactivate the checkboxes
+-DELETE /user/{id}
+deletes user
 
-can you add and implement the dummy but kinda working auth system, and add two accounts test@example.com and admin@example.com with some example passwords and make it usable
+Questions:
+- POST /questions
+adds new question to the database
+{
+	test_id:
+	questionImage
+	question:
+	type:
+	options:
+	correct_answer:
+}
+-GET /questions
+gets all questions
+
+TESTS:
+-GET /tests
+[
+    {
+        "id": 1,
+        "nomi": "sentiyabrda tushgan savollar",
+        "subject": "Math",
+        "savollar_soni": 2,
+        "is_premium": false,
+        "jami_urinishlar": 10,
+        "average": 180,
+        "created_at": "2025-12-29T16:38:44.730Z",
+        "updated_at": "2025-12-29T16:41:27.668Z",
+        "questions": [],
+        "userAccesses": [],
+        "userInfos": []
+    }
+    ,...
+]
+
+-PATCH /tests/{id}
+body:
+{
+    "savollar_soni": 2,
+    "average": 180,
+    "jami_urinishlar": 10
+}
+returnval
+{
+    "id": 1,
+    "nomi": "sentiyabrda tushgan savollar",
+    "subject": "Math",
+    "savollar_soni": 2,
+    "is_premium": false,
+    "jami_urinishlar": 10,
+    "average": 180,
+    "created_at": "2025-12-29T16:38:44.730Z",
+    "updated_at": "2025-12-29T16:41:27.668Z",
+    "questions": [],
+    "userAccesses": [
+        {
+            "id": 6,
+            "user_id": 2,
+            "test_id": 1,
+            "created_at": "2026-01-04T16:23:46.659Z"
+        }
+    ],
+    "userInfos": []
+}
+
+-GET /tests/{id}
+returnval:
+{
+    "id": 1,
+    "nomi": "sentiyabrda tushgan savollar",
+    "subject": "Math",
+    "savollar_soni": 2,
+    "is_premium": false,
+    "jami_urinishlar": 10,
+    "average": 180,
+    "created_at": "2025-12-29T16:38:44.730Z",
+    "updated_at": "2025-12-29T16:41:27.668Z",
+    "questions": [],
+    "userAccesses": [
+        {
+            "id": 6,
+            "user_id": 2,
+            "test_id": 1,
+            "created_at": "2026-01-04T16:23:46.659Z"
+        }
+    ],
+    "userInfos": []
+}
+
+-POST /tests
+{
+    "nomi": "sentiyabrda tushgan savollar",
+    "subject":"Math"
+}
+returnval:
+
+{
+    "is_premium": false,
+    "jami_urinishlar": 0,
+    "id": 2,
+    "nomi": "sentiyabrda tushgan savollar",
+    "subject": "Math",
+    "savollar_soni": null,
+    "average": null
+}

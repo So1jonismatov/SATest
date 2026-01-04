@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Users, LogOut, UserCog } from "lucide-react";
+import { LayoutDashboard, FileText, LogOut, UserCog } from "lucide-react";
 
 const links = [
   {

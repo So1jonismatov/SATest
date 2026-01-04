@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/api/simulation/v2";
 import { Link } from "react-router-dom";
 
 const StudentSettings = () => {
   const { user, login } = useAuth();
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState<string>(user?.name || '');
+  const [email, setEmail] = useState<string>(user?.email || '');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (user) {
-      setName(user.name);
-      setEmail(user.email);
+      setName(user.name || '');
+      setEmail(user.email || '');
     }
   }, [user]);
 
@@ -50,9 +49,6 @@ const StudentSettings = () => {
     }
   };
 
-  const handlePurchasePremium = async () => {
-    setMessage('Premium purchase functionality would go here. In a real app, this would connect to a payment processor.');
-  };
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">

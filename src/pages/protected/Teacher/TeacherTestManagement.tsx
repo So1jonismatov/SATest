@@ -4,29 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { api } from "@/api/simulation/v2";
-import { useAuth } from "@/context/AuthContext";
-import { type Test, type Question, type TestWithAccess } from "@/types/index";
+import type { TestWithAccess } from "@/api/real/types";
 import {
   Plus,
   Trash2,
   Eye,
   FileText,
   Search,
-  ImagePlus,
   Users,
 } from "lucide-react";
 
 const TeacherTestManagement: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [tests, setTests] = useState<TestWithAccess[]>([]);
   const [selectedTest, setSelectedTest] = useState<TestWithAccess | null>(null);

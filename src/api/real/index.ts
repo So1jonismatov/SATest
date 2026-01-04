@@ -2,11 +2,8 @@ import { getCookie, eraseCookie } from "@/function/cookies";
 import type {
   StudentRegisterData,
   StudentLoginData,
-  TeacherRegisterData,
-  TeacherLoginData,
   AuthResponse,
   Test,
-  TestWithAccess,
   TestSubmission,
   UserAccess,
   User,
@@ -147,7 +144,7 @@ const studentAPI = {
 const teacherAPI = {
   createTest: (testData: any) => post<Test>("/tests", testData),
   grantAccess: (accessData: UserAccess) => post<any>("/admin/access", accessData),
-  revokeAccess: (accessData: UserAccess) => del<any>("/admin/access", accessData),
+  revokeAccess: (accessData: UserAccess) => del<any>(`/admin/access/${accessData.userId}/${accessData.testId}`),
   getUser: (userId: string) => get<User>(`/admin/users/${userId}`),
   getUsers: (params?: { page?: number; limit?: number; search?: string }) => {
     const queryParams = new URLSearchParams();

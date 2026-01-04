@@ -1,14 +1,13 @@
 // src/api/mock.ts - Mock API for dummy tests and data
 
 import type {
-  TestWithAccess,
   PaginatedTests,
   TestSubmission,
   UserAccess,
   UserWithAccessList,
   PaginatedUsers
 } from "./real/types";
-import type { Test, Question } from "@/types";
+import type { Test } from "@/types";
 
 // Simulate API latency
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -245,7 +244,7 @@ export const mockApi = {
 
       return {
         page,
-        totalPages,
+        totalPages: totalPages,
         totalTests,
         tests: convertedTests
       };
@@ -271,8 +270,8 @@ export const mockApi = {
         questions: questions.length > 0 ? questions : mockDatabase.questions.slice(0, 5).map(q => ({
           id: q.id,
           text: q.text,
-          answers: q.options?.map(opt => ({ id: opt.key, text: opt.text })) || [],
-          correctAnswerId: q.correctAnswer
+          answers: q.answers?.map(opt => ({ id: opt.id, text: opt.text })) || [],
+          correctAnswerId: q.correctAnswerId
         })),
         durationInMinutes: 60,
         status: "Published",
@@ -401,7 +400,8 @@ export const mockApi = {
       return {
         users: paginatedUsers,
         total,
-        page
+        page,
+        totalPages
       };
     }
   }

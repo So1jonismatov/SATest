@@ -95,10 +95,10 @@ const StudentManagement: React.FC = () => {
     try {
       if (currentlyHasAccess) {
         // Revoke access
-        await api.teacher.revokeAccess({ userId: studentId, testId });
+        await api.teacher.revokeAccess({ userId: studentId, testId, accessLevel: "student" });
       } else {
         // Grant access
-        await api.teacher.grantAccess({ userId: studentId, testId });
+        await api.teacher.grantAccess({ userId: studentId, testId, accessLevel: "student" });
       }
     } catch (error) {
       // If API call fails, revert the optimistic update
@@ -122,7 +122,7 @@ const StudentManagement: React.FC = () => {
   const handleGrantAllAccess = async (studentId: string) => {
     try {
       const grantPromises = tests.map((test) =>
-        api.teacher.grantAccess({ userId: studentId, testId: test.testId }),
+        api.teacher.grantAccess({ userId: studentId, testId: test.testId, accessLevel: "student" }),
       );
       await Promise.all(grantPromises);
       setStudents((prev) =>
@@ -141,7 +141,7 @@ const StudentManagement: React.FC = () => {
   const handleRevokeAllAccess = async (studentId: string) => {
     try {
       const revokePromises = tests.map((test) =>
-        api.teacher.revokeAccess({ userId: studentId, testId: test.testId }),
+        api.teacher.revokeAccess({ userId: studentId, testId: test.testId, accessLevel: "student" }),
       );
       await Promise.all(revokePromises);
       setStudents((prev) =>
@@ -392,7 +392,7 @@ const StudentManagement: React.FC = () => {
                             checked={selectedStudent.access_list.includes(
                               test.testId,
                             )}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={() =>
                               handleAccessToggle(
                                 selectedStudent.id,
                                 test.testId,

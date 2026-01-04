@@ -210,16 +210,16 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                     []
                   ).map((answer) => (
                     <div
-                      key={answer.id || answer.key}
+                      key={answer.id}
                       onClick={() =>
                         !isSubmitting &&
                         handleAnswerSelect(
                           currentQuestion.id,
-                          answer.id || answer.key,
+                          answer.id,
                         )
                       }
                       className={`flex items-start p-3 sm:p-4 border rounded-md transition-colors ${
-                        selectedAnswer === (answer.id || answer.key)
+                        selectedAnswer === answer.id
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-accent"
                       } ${isSubmitting ? "cursor-not-allowed" : "cursor-pointer"}`}
@@ -227,12 +227,12 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                       <input
                         type="radio"
                         name={`question-${currentQuestion.id}`}
-                        value={answer.id || answer.key}
-                        checked={selectedAnswer === (answer.id || answer.key)}
+                        value={answer.id}
+                        checked={selectedAnswer === answer.id}
                         onChange={() =>
                           handleAnswerSelect(
                             currentQuestion.id,
-                            answer.id || answer.key,
+                            answer.id,
                           )
                         }
                         disabled={isSubmitting}

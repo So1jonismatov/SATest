@@ -1,13 +1,11 @@
 // src/api/simulation/v2/index.ts
 
-import type { Test, TestAnswer, Question } from "@/types";
 import type {
-  TestWithAccess,
   PaginatedTests,
   UserAccess,
   UserWithAccessList,
   PaginatedUsers,
-} from "../real/types";
+} from "../../real/types";
 
 // Simulate API latency
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -239,7 +237,7 @@ const studentAPI = {
       ...test,
       title: test.nomi,
       questions:
-        questions.length > 0 ? questions : inInMemoryDb.questions.slice(0, 3), // fallback to sample questions
+        questions.length > 0 ? questions : inMemoryDb.questions.slice(0, 3), // fallback to sample questions
       hasAccess: hasAccess || !test.isPremium, // Non-premium tests are always accessible
     };
   },
@@ -423,6 +421,44 @@ const teacherAPI = {
       users: paginatedUsers,
       total,
       page,
+      totalPages,
+    };
+  },
+
+  async deleteUser(userId: string): Promise<any> {
+    await delay(300);
+
+    const userIndex = inMemoryDb.users.findIndex(u => u.id === userId);
+    if (userIndex !== -1) {
+      inMemoryDb.users.splice(userIndex, 1);
+    }
+
+    // Also remove user's access records
+    inMemoryDb.userAccess = inMemoryDb.userAccess.filter(ua => ua.userId !== userId);
+
+    return { success: true, message: "User deleted successfully" };
+  },
+
+  async addUser(userData: any): Promise<any> {
+    await delay(300);
+
+    const newUser = {
+      id: `user-${Date.now()}`,
+      name: userData.full_name,
+      email: userData.email,
+      role: userData.role || "student",
+      phone: userData.email,
+      status: "Active",
+      password: userData.password,
+    };
+
+    inMemoryDb.users.push(newUser);
+
+    return {
+      id: newUser.id,
+      full_name: newUser.name,
+      email: newUser.email,
+      access_list: [],
     };
   },
 };

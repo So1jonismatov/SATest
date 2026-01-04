@@ -171,14 +171,6 @@ export interface TeacherActivity {
   userName?: string;
 }
 
-export interface TeacherStats {
-  totalStudents: number;
-  totalTeachers: number;
-  activeUsers: number;
-  newRegistrations: number;
-  recentActivity: TeacherActivity[];
-}
-
 export interface TeacherAssignment {
   id: string;
   testId: string;
@@ -198,7 +190,10 @@ export interface TeacherStats {
   totalStudents: number;
   completedTests: number;
   averageScore: number;
-  recentActivity: RecentActivity[];
+  totalTeachers: number;
+  activeUsers: number;
+  newRegistrations: number;
+  recentActivity: (TeacherActivity | RecentActivity)[];
 }
 
 export interface RecentActivity {

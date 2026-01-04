@@ -1,5 +1,4 @@
 import { type ReactNode, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useFullscreen } from "@/context/FullscreenContext";
 
@@ -10,10 +9,9 @@ interface ProtectedRouteProps {
   allowedRoles?: Role[];
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { user, isLoading } = useAuth();
   const { enterFullscreen } = useFullscreen();
-  const location = useLocation();
 
   // Restore fullscreen if user is student
   useEffect(() => {

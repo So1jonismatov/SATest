@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { type Test } from "@/types";
 import { TestPlayer } from "@/components/shared/student-testing/TestPlayer";
 import { api } from "@/api/simulation/v2";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +47,7 @@ const TestPlayerPage = () => {
       const totalQuestions = test.questions.length;
 
       const correctAnswersMap = new Map<string, string>();
-      test.questions.forEach(q => {
+      test.questions.forEach((q: any) => {
         if (q.correctAnswer) {
           correctAnswersMap.set(q.id, q.correctAnswer);
         }

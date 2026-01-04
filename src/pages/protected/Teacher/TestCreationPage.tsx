@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { api } from "@/api/simulation/v2";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,8 +32,8 @@ const mathSymbols = [
 ];
 
 const TestCreationPage: React.FC = () => {
-  const { testId } = useParams<{ testId: string }>();
-  const isNewTest = testId === "new";
+  const { testId } = useParams<{ testId?: string }>();
+  const isNewTest = testId === "new" || !testId;
   const [test, setTest] = useState({
     title: "",
     subject: "mathematics",
@@ -45,7 +45,7 @@ const TestCreationPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!isNewTest) {
+    if (!isNewTest && testId) {
       // Fetch existing test data
       const fetchTest = async () => {
         try {
@@ -149,7 +149,7 @@ const TestCreationPage: React.FC = () => {
     try {
       if (isNewTest) {
         await api.teacher.createTest(testData);
-      } else {
+      } else if (testId) {
         await api.teacher.updateTest(testId, testData);
       }
       alert("Test saved successfully!");
@@ -262,7 +262,7 @@ const TestCreationPage: React.FC = () => {
               <div>
                 <Label>Options</Label>
                 <div className="space-y-3 mt-2">
-                  {currentQuestion.options.map((option, index) => (
+                  {currentQuestion.options.map((option: string, index: number) => (
                     <div key={index} className="flex items-center gap-2">
                       <span className="w-8 h-8 flex items-center justify-center rounded-full bg-muted text-sm font-medium">
                         {String.fromCharCode(65 + index)}
@@ -299,7 +299,7 @@ const TestCreationPage: React.FC = () => {
               <div>
                 <Label>Correct Answer</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {currentQuestion.options.map((_, index) => (
+                  {currentQuestion.options.map((_: string, index: number) => (
                     <Button
                       key={index}
                       variant={
