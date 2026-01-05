@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,13 +49,13 @@ const TestCreationPage: React.FC = () => {
       // Fetch existing test data
       const fetchTest = async () => {
         try {
-          const fetchedTest = await api.teacher.getTest(testId);
+          const fetchedTestWithAccess = await api.student.getTest(testId);
           setTest({
-            title: fetchedTest.title,
-            subject: fetchedTest.subject,
-            isPremium: fetchedTest.isPremium || false,
+            title: fetchedTestWithAccess.nomi,
+            subject: fetchedTestWithAccess.subject,
+            isPremium: fetchedTestWithAccess.isPremium || false,
           });
-          setQuestions(fetchedTest.questions);
+          setQuestions(fetchedTestWithAccess.questions || []);
         } catch (error) {
           console.error("Error fetching test:", error);
         }
@@ -143,8 +143,6 @@ const TestCreationPage: React.FC = () => {
     const testData = {
       ...test,
       questions,
-      title: test.title,
-      subject: test.subject,
     };
     try {
       if (isNewTest) {

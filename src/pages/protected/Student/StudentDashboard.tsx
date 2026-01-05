@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { FileText, Trophy, Target, BookOpen, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
 import { type TestWithAccess } from "@/api/real/types";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";

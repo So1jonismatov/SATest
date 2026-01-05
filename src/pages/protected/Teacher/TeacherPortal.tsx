@@ -1,3 +1,4 @@
+import { api } from "@/api/real";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -28,70 +29,28 @@ const TeacherPortal: React.FC = () => {
   });
 
   useEffect(() => {
-    // For now, we'll simulate data since the API isn't fully implemented
-    const mockTests: TestWithAccess[] = [
-      {
-        testId: "1",
-        nomi: "SAT Math Practice Test 1",
-        subject: "mathematics",
-        questionCount: 58,
-        isPremium: false,
-        hasAccess: true,
-        jami_urinishlar: 120,
-        average: 750.5
-      },
-      {
-        testId: "2",
-        nomi: "SAT Reading Practice Test 1",
-        subject: "reading",
-        questionCount: 52,
-        isPremium: false,
-        hasAccess: true,
-        jami_urinishlar: 95,
-        average: 680.0
-      },
-      {
-        testId: "3",
-        nomi: "Advanced SAT Math Test",
-        subject: "mathematics",
-        questionCount: 58,
-        isPremium: true,
-        hasAccess: false,
-        jami_urinishlar: 15,
-        average: 720.0
+    const fetchData = async () => {
+      try {
+        const [testsResponse, usersResponse] = await Promise.all([
+          api.student.getTests(), // Assuming teachers can see all tests
+          api.teacher.getUsers(),
+        ]);
+
+        setTests(testsResponse.tests);
+        setUsers(usersResponse.users);
+
+        setStats({
+          totalTests: testsResponse.totalTests,
+          premiumTests: testsResponse.tests.filter(t => t.isPremium).length,
+          totalStudents: usersResponse.total,
+          averageScore: Math.round(testsResponse.tests.reduce((sum, test) => sum + test.average, 0) / testsResponse.tests.length) || 0
+        });
+      } catch (error) {
+        console.error("Error fetching teacher portal data:", error);
       }
-    ];
+    };
 
-    const mockUsers: UserWithAccessList[] = [
-      {
-        id: "1",
-        full_name: "John Doe",
-        email: "john@example.com",
-        access_list: ["1"]
-      },
-      {
-        id: "2",
-        full_name: "Jane Smith",
-        email: "jane@example.com",
-        access_list: ["1", "2"]
-      },
-      {
-        id: "3",
-        full_name: "Bob Johnson",
-        email: "bob@example.com",
-        access_list: []
-      }
-    ];
-
-    setTests(mockTests);
-    setUsers(mockUsers);
-
-    setStats({
-      totalTests: mockTests.length,
-      premiumTests: mockTests.filter(t => t.isPremium).length,
-      totalStudents: mockUsers.length,
-      averageScore: Math.round(mockTests.reduce((sum, test) => sum + test.average, 0) / mockTests.length) || 0
-    });
+    fetchData();
   }, [user]);
 
   return (

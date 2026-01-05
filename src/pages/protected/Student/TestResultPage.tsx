@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Test, type TestAnswer as TestResult } from "@/types";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
+import { mapApiTestToAppTest } from "@/function/Student/test-mapper";
 import { CheckCircle, XCircle } from "lucide-react";
 import MathTextRenderer from "@/components/shared/math/MathTextRenderer";
 
@@ -15,7 +16,9 @@ const TestResultPage = () => {
 
   useEffect(() => {
     if (testId) {
-      api.student.getTest(testId).then(setTest);
+      api.student.getTest(testId).then(apiTest => {
+        setTest(mapApiTestToAppTest(apiTest));
+      });
     }
   }, [testId]);
 

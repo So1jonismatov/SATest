@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
 import type { TestWithAccess } from "@/api/real/types";
 import {
   Plus,

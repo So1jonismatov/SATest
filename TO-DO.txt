@@ -156,3 +156,114 @@ returnval:
     "savollar_soni": null,
     "average": null
 }
+
+
+user-access:
+-POST /user-access
+body:
+{
+  "user_id": 2,
+  "test_id": 1
+}
+gives user access to the test
+returnval:
+{
+    "id": 7,
+    "user_id": 2,
+    "test_id": 1,
+    "created_at": "2026-01-04T16:53:18.622Z"
+}
+-GET /user-acess
+gets all user acess
+returnval:
+[
+    {
+        "id": 7,
+        "user_id": 2,
+        "test_id": 1,
+        "created_at": "2026-01-04T16:53:18.622Z",
+        "user": {
+            "id": 2,
+            "email": "abdullohaziz559@gmail.com",
+            "full_name": "Sobir",
+            "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
+            "role": "student",
+            "created_at": "2025-12-29T16:35:10.234Z",
+            "updated_at": "2026-01-04T16:22:14.067Z"
+        },
+        "test": {
+            "id": 1,
+            "nomi": "sentiyabrda tushgan savollar",
+            "subject": "Math",
+            "savollar_soni": 2,
+            "is_premium": false,
+            "jami_urinishlar": 10,
+            "average": 180,
+            "created_at": "2025-12-29T16:38:44.730Z",
+            "updated_at": "2025-12-29T16:41:27.668Z"
+        }
+    },
+    {
+        "id": 6,
+        "user_id": 2,
+        "test_id": 1,
+        "created_at": "2026-01-04T16:23:46.659Z",
+        "user": {
+            "id": 2,
+            "email": "abdullohaziz559@gmail.com",
+            "full_name": "Sobir",
+            "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
+            "role": "student",
+            "created_at": "2025-12-29T16:35:10.234Z",
+            "updated_at": "2026-01-04T16:22:14.067Z"
+        },
+        "test": {
+            "id": 1,
+            "nomi": "sentiyabrda tushgan savollar",
+            "subject": "Math",
+            "savollar_soni": 2,
+            "is_premium": false,
+            "jami_urinishlar": 10,
+            "average": 180,
+            "created_at": "2025-12-29T16:38:44.730Z",
+            "updated_at": "2025-12-29T16:41:27.668Z"
+        }
+    }
+]
+
+-GET /user-acess/{id}
+gets specific user acesss
+return val:
+{
+    "id": 7,
+    "user_id": 2,
+    "test_id": 1,
+    "created_at": "2026-01-04T16:53:18.622Z",
+    "user": {
+        "id": 2,
+        "email": "abdullohaziz559@gmail.com",
+        "full_name": "Sobir",
+        "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
+        "role": "student",
+        "created_at": "2025-12-29T16:35:10.234Z",
+        "updated_at": "2026-01-04T16:22:14.067Z"
+    },
+    "test": {
+        "id": 1,
+        "nomi": "sentiyabrda tushgan savollar",
+        "subject": "Math",
+        "savollar_soni": 2,
+        "is_premium": false,
+        "jami_urinishlar": 10,
+        "average": 180,
+        "created_at": "2025-12-29T16:38:44.730Z",
+        "updated_at": "2025-12-29T16:41:27.668Z"
+    }
+}
+
+-DELETE /user-access/{id}
+deletes user acess
+returnval:
+{
+    "message": "UserAccess deleted successfully"
+}

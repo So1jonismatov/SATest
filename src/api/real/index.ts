@@ -105,6 +105,29 @@ async function del<T>(url: string): Promise<T> {
   return response.json();
 }
 
+async function patch<T>(url: string, data: any): Promise<T> {
+  const token = getAuthToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${baseURL}${url}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "API PATCH request failed");
+  }
+
+  return response.json();
+}
+
 // -------------------- Auth APIs --------------------
 
 const authAPI = {
@@ -121,6 +144,7 @@ const authAPI = {
     const user = parseJwt(token);
     return { token, user };
   },
+  updateUser: (userId: string, data: Partial<User>) => patch<User>(`/user/${userId}`, data),
 };
 
 // -------------------- Student APIs --------------------
@@ -134,7 +158,23 @@ const studentAPI = {
 
     return get<PaginatedTests>(`/tests?${queryParams.toString()}`);
   },
-  getTest: (testId: string) => get<Test>(`/tests/${testId}`),
+  getTest: async (testId: string): Promise<TestWithAccess> => {
+    const testData = await get<any>(`/tests/${testId}`);
+    const currentUser = authAPI.getCurrentUser();
+    const hasAccess = currentUser && testData.userAccesses.some((access: any) => access.user_id === currentUser.user.id);
+    
+    return {
+      testId: testData.id.toString(),
+      nomi: testData.nomi,
+      subject: testData.subject,
+      questionCount: testData.questions.length,
+      isPremium: testData.is_premium,
+      hasAccess: hasAccess || !testData.is_premium,
+      jami_urinishlar: testData.jami_urinishlar,
+      average: testData.average,
+      questions: testData.questions,
+    };
+  },
   submitTest: (testId: string, submission: TestSubmission) =>
     post<any>(`/tests/${testId}/submit`, submission),
 };
@@ -154,6 +194,10 @@ const teacherAPI = {
 
     return get<PaginatedUsers>(`/admin/users?${queryParams.toString()}`);
   },
+  deleteTest: (testId: string) => del<any>(`/tests/${testId}`),
+  updateTest: (testId: string, testData: Partial<any>) => patch<any>(`/tests/${testId}`, testData),
+  deleteUser: (userId: string) => del<any>(`/user/${userId}`),
+  addUser: (userData: StudentRegisterData) => post<User>(`/user`, userData),
 };
 
 // -------------------- API Export --------------------

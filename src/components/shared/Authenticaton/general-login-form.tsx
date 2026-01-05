@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { type z } from "zod";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
+import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 import getRedirectPath from "@/function/Authentication/login-functions";
 
 interface GeneralLoginFormProps extends React.ComponentProps<"div"> {
@@ -38,9 +39,10 @@ export function GeneralLoginForm({
 
   const onSubmit = async (values: z.infer<typeof TeacherLoginSchema>) => {
     try {
-      const { user, token } = await api.auth.login(values);
-      authLogin(user, token);
-      const redirectPath = getRedirectPath(user);
+      const { user: apiUser, token } = await api.auth.login(values);
+      const appUser = mapApiUserToAppUser(apiUser);
+      authLogin(appUser, token);
+      const redirectPath = getRedirectPath(appUser);
       navigate(redirectPath);
     } catch (error) {
       const errorMessage =

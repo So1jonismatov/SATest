@@ -2,11 +2,11 @@ import { type User as AppUser } from '@/types';
 import { type User as ApiUser } from '@/api/real/types';
 
 export const mapApiUserToAppUser = (apiUser: ApiUser): AppUser => {
-  const { id, name, email, role } = apiUser;
+  const { id, full_name, email, role } = apiUser;
 
   const baseAppUser = {
     id: id.toString(),
-    name,
+    name: full_name,
     email,
     role,
     // Providing default values for fields not present in the API response

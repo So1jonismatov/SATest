@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
+import { api } from "@/api/real";
+import { getCookie } from "@/function/cookies";
+import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
 
 const StudentSettings = () => {
   const { user, login } = useAuth();
@@ -21,6 +24,10 @@ const StudentSettings = () => {
     }
   }, [user]);
 
+import { api } from "@/api/real";
+import { getCookie } from "@/function/cookies";
+import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
+//...
   const handleSave = async () => {
     if (!user) return;
 
@@ -28,16 +35,12 @@ const StudentSettings = () => {
     setMessage('');
 
     try {
-      // In a real app, we would call an API to update user details
-      // For now, we'll update the in-memory database directly
-      const updatedUser = {
-        ...user,
-        name,
-        email
-      };
+      const updatedApiUser = await api.auth.updateUser(user.id, { full_name: name, email });
 
-      // Update the user in the auth context
-      login(updatedUser, `mock-jwt-token-${user.id}`);
+      const updatedAppUser = mapApiUserToAppUser(updatedApiUser);
+
+      const token = getCookie("authToken"); 
+      login(updatedAppUser, token || '');
 
       setMessage('Profile updated successfully!');
       setIsEditing(false);
@@ -48,6 +51,7 @@ const StudentSettings = () => {
       setIsSaving(false);
     }
   };
+//...
 
 
   return (

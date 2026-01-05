@@ -22,7 +22,8 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { UserWithAccessList, TestWithAccess } from "@/api/real/types";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
+import { mapApiUserToUserWithAccessList } from "@/function/Teacher/user-mapper";
 
 const StudentManagement: React.FC = () => {
   const { user } = useAuth();
@@ -172,12 +173,14 @@ const StudentManagement: React.FC = () => {
   // Handle adding a new student
   const handleAddStudent = async () => {
     try {
-      const addedStudent = await api.teacher.addUser({
+      const addedApiUser = await api.teacher.addUser({
         email: newStudent.email,
         password: newStudent.password,
         full_name: newStudent.full_name,
         role: "student",
       });
+
+      const addedStudent = mapApiUserToUserWithAccessList(addedApiUser);
 
       setStudents([...students, addedStudent]);
       setIsAddStudentDialogOpen(false);

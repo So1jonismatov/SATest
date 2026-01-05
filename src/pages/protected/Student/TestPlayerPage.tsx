@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { TestPlayer } from "@/components/shared/student-testing/TestPlayer";
-import { api } from "@/api/simulation/v2";
+import { api } from "@/api/real";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 

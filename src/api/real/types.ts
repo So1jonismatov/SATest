@@ -34,7 +34,7 @@ export interface TeacherLoginData {
 
 export interface User {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
   role: "teacher" | "student";
 }
@@ -86,6 +86,7 @@ export interface TestWithAccess {
   hasAccess: boolean;
   jami_urinishlar: number;
   average: number;
+  questions?: Question[];
 }
 
 export interface UserAccess {
