@@ -8,7 +8,8 @@ import type {
   UserAccess,
   User,
   PaginatedTests,
-  PaginatedUsers
+  PaginatedUsers,
+  TestWithAccess, // Added this import
 } from "./types";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;

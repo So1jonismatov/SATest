@@ -3,7 +3,7 @@ import { type Test as AppTest, type Question as AppQuestion, type Answer as AppA
 import { type TestWithAccess as ApiTestWithAccess, type Question as ApiQuestion } from "@/api/real/types";
 
 export const mapApiTestToAppTest = (apiTest: ApiTestWithAccess): AppTest => {
-  const appQuestions: AppQuestion[] = apiTest.questions?.map(apiQuestion => {
+  const appQuestions: AppQuestion[] = apiTest.questions?.map((apiQuestion: ApiQuestion) => {
     const appAnswers: AppAnswer[] = apiQuestion.options.map(option => ({
       id: option.key,
       text: option.text,
