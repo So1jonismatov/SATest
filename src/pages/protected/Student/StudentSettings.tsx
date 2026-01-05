@@ -24,10 +24,6 @@ const StudentSettings = () => {
     }
   }, [user]);
 
-import { api } from "@/api/real";
-import { getCookie } from "@/function/cookies";
-import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
-//...
   const handleSave = async () => {
     if (!user) return;
 
@@ -51,7 +47,6 @@ import { mapApiUserToAppUser } from "@/function/Authentication/user-mapper";
       setIsSaving(false);
     }
   };
-//...
 
 
   return (
