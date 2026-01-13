@@ -12,6 +12,7 @@ import {
   StudentSettings,
   PaymentPage,
   TestCreationPage,
+  TestEditPage,
   TestPlayerPage,
   TestResultPage,
   TeacherPortal,
@@ -96,7 +97,8 @@ const router = createBrowserRouter([
     children: [
       { path: "dashboard", element: <TeacherPortal /> },
       { path: "tests", element: <TeacherTestManagement /> },
-      { path: "tests/:testId/edit", element: <TestCreationPage /> }, // New test creation page
+      { path: "tests/new", element: <TestCreationPage /> },
+      { path: "tests/:testId", element: <TestEditPage /> },
       { path: "students", element: <StudentManagement /> }, // New student management page
       { path: "profile", element: <TeacherProfile /> },
       { path: "settings", element: <TeacherSettings /> },

@@ -4,7 +4,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { FileText, Trophy, Target, BookOpen, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/api/real";
-import { type TestWithAccess } from "@/api/real/types";
+import { type Test, type TestWithAccess } from "@/api/real/types";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,16 +25,35 @@ const StudentDashboard = () => {
     const fetchTests = async () => {
       try {
         const response = await api.student.getTests();
-        setTests(response.tests);
+        if (response) {
+          const testsWithAccess = response.map((test: Test) => {
+            const hasAccess = user?.userAccesses.some(
+              (access: any) => access.test_id === test.id
+            );
+            return {
+              testId: test.id,
+              nomi: test.nomi,
+              subject: test.subject,
+              questionCount: test.savollar_soni || 0,
+              is_premium: test.is_premium,
+              hasAccess: hasAccess || !test.is_premium,
+              jami_urinishlar: test.jami_urinishlar,
+              average: test.average,
+              questions: test.questions,
+            };
+          });
+          setTests(testsWithAccess);
+        }
       } catch (error) {
         console.error("Error fetching tests:", error);
+        setTests([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTests();
-  }, []);
+  }, [user]);
 
   // Filter tests based on search term, subject, and access
   const filteredTests = useMemo(() => {
@@ -43,8 +62,8 @@ const StudentDashboard = () => {
                            test.subject.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSubject = subjectFilter === "all" || test.subject === subjectFilter;
       const matchesAccess = accessFilter === "all" ||
-                           (accessFilter === "accessible" && (test.hasAccess || !test.isPremium)) ||
-                           (accessFilter === "premium" && test.isPremium && !test.hasAccess);
+                           (accessFilter === "accessible" && (test.hasAccess || !test.is_premium)) ||
+                           (accessFilter === "premium" && test.is_premium && !test.hasAccess);
 
       return matchesSearch && matchesSubject && matchesAccess;
     });
@@ -109,7 +128,7 @@ const StudentDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {tests.filter((test) => test.isPremium).length}
+                {tests.filter((test) => test.is_premium).length}
               </div>
               <p className="text-xs text-muted-foreground">Premium access</p>
             </CardContent>
@@ -194,7 +213,7 @@ const StudentDashboard = () => {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{test.nomi}</CardTitle>
-                        {test.isPremium && (
+                        {test.is_premium && (
                           <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                             Premium
                           </span>
@@ -220,16 +239,16 @@ const StudentDashboard = () => {
                       </div>
                       <Button
                         asChild
-                        disabled={!test.hasAccess && test.isPremium}
+                        disabled={!test.hasAccess && test.is_premium}
                         className="w-full"
                       >
                         <Link to={`/test/${test.testId}`}>
-                          {test.hasAccess || !test.isPremium
+                          {test.hasAccess || !test.is_premium
                             ? "Start Test"
                             : "Access Required"}
                         </Link>
                       </Button>
-                      {!test.hasAccess && test.isPremium && (
+                      {!test.hasAccess && test.is_premium && (
                         <p className="text-xs text-center text-muted-foreground">
                           Contact your teacher to get access
                         </p>

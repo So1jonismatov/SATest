@@ -16,27 +16,21 @@ export interface StudentLoginData {
   password: string;
 }
 
-export interface TeacherRegisterData {
-  email: string;
-  password: string;
-  full_name: string;
-  role?: "teacher";
-}
 
-export interface TeacherLoginData {
-  email: string;
-  password: string;
-}
 
 // =================================================================================================
 // --- User & Auth Types ---
 // =================================================================================================
 
 export interface User {
-  id: string;
-  full_name: string;
+  id: number;
+  full_name: string | null;
   email: string;
   role: "teacher" | "student";
+  created_at: string;
+  updated_at: string;
+  userAccesses: any[];
+  userInfos: any[];
 }
 
 export interface AuthResponse {
@@ -49,62 +43,48 @@ export interface AuthResponse {
 // =================================================================================================
 
 export interface Question {
-  id: string;
-  text: string;
+  id: number;
+  question: string;
   type: "multiple_choice";
-  options: {
-    key: string;
-    text: string;
-  }[];
-  correctAnswer: string;
+  options: Record<string, string>; // e.g., { "A": "Option A", "B": "Option B" }
+  correctAnswer: { answer: string };
+  questionImage: any[]; // Or a more specific type for image data
 }
 
 export interface Test {
-  testId: string;
-  title: string;
+  id: number;
+  nomi: string;
   subject: string;
+  savollar_soni: number | null;
+  is_premium: boolean;
+  jami_urinishlar: number;
+  average: number | null;
+  created_at: string;
+  updated_at: string;
   questions: Question[];
+  userAccesses: any[]; // Consider a more specific type if available
+  userInfos: any[]; // Consider a more specific type if available
 }
 
-export interface PaginatedTests {
-  page: number;
-  totalPages: number;
-  totalTests: number;
-  tests: TestWithAccess[];
-}
 
-export interface TestSubmission {
-  score: number;
-}
 
 export interface TestWithAccess {
-  testId: string;
+  testId: number;
   nomi: string;
   subject: string;
   questionCount: number;
-  isPremium: boolean;
+  is_premium: boolean;
   hasAccess: boolean;
   jami_urinishlar: number;
-  average: number;
+  average: number | null;
   questions?: Question[];
 }
 
 export interface UserAccess {
-  userId: string;
-  testId: string;
-  accessLevel: string; // or whatever access level type should be
+  id?: number; // Optional, as it's assigned by the backend on creation
+  user_id: number;
+  test_id: number;
+  created_at?: string;
 }
 
-export interface UserWithAccessList {
-  id: string;
-  full_name: string;
-  email: string;
-  access_list: string[];
-}
 
-export interface PaginatedUsers {
-  users: UserWithAccessList[];
-  total: number;
-  page: number;
-  totalPages: number;
-}

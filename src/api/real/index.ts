@@ -8,7 +8,6 @@ import type {
   UserAccess,
   User,
   PaginatedTests,
-  PaginatedUsers,
   TestWithAccess, // Added this import
 } from "./types";
 
@@ -133,9 +132,9 @@ async function patch<T>(url: string, data: any): Promise<T> {
 
 const authAPI = {
   register: (data: StudentRegisterData) =>
-    post<AuthResponse>("/auth/register", data),
+    post<AuthResponse>("/user", data),
   login: (data: StudentLoginData) =>
-    post<AuthResponse>("/auth/login", data),
+    post<AuthResponse>("/user/login", data),
   logout: () => {
     eraseCookie("authToken");
   },
@@ -157,10 +156,10 @@ const studentAPI = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.subject) queryParams.append('subject', params.subject);
 
-    return get<PaginatedTests>(`/tests?${queryParams.toString()}`);
+    return get<Test[]>(`/tests?${queryParams.toString()}`);
   },
   getTest: async (testId: string): Promise<TestWithAccess> => {
-    const testData = await get<any>(`/tests/${testId}`);
+    const testData = await get<Test>(`/tests/${testId}`);
     const currentUser = authAPI.getCurrentUser();
     const hasAccess = currentUser && testData.userAccesses.some((access: any) => access.user_id === currentUser.user.id);
     
@@ -168,12 +167,12 @@ const studentAPI = {
       testId: testData.id.toString(),
       nomi: testData.nomi,
       subject: testData.subject,
-      questionCount: testData.questions.length,
+      questionCount: testData.questions ? testData.questions.length : 0,
       isPremium: testData.is_premium,
       hasAccess: hasAccess || !testData.is_premium,
       jami_urinishlar: testData.jami_urinishlar,
       average: testData.average,
-      questions: testData.questions,
+      questions: testData.questions || [],
     };
   },
   submitTest: (testId: string, submission: TestSubmission) =>
@@ -183,22 +182,25 @@ const studentAPI = {
 // -------------------- Teacher/Admin APIs --------------------
 
 const teacherAPI = {
-  createTest: (testData: any) => post<Test>("/tests", testData),
-  grantAccess: (accessData: UserAccess) => post<any>("/admin/access", accessData),
-  revokeAccess: (accessData: UserAccess) => del<any>(`/admin/access/${accessData.userId}/${accessData.testId}`),
-  getUser: (userId: string) => get<User>(`/admin/users/${userId}`),
+  createTest: (testData: { nomi: string; subject: string }) =>
+    post<Test>("/tests", { nomi: testData.nomi, subject: testData.subject }),
+  grantAccess: (accessData: UserAccess) => post<any>("/user-access", accessData),
+  revokeAccess: (userAccessId: string) => del<any>(`/user-access/${userAccessId}`),
+  getUser: (userId: string) => get<User>(`/user/${userId}`),
   getUsers: (params?: { page?: number; limit?: number; search?: string }) => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
 
-    return get<PaginatedUsers>(`/admin/users?${queryParams.toString()}`);
+    return get<User[]>(`/user?${queryParams.toString()}`);
   },
   deleteTest: (testId: string) => del<any>(`/tests/${testId}`),
   updateTest: (testId: string, testData: Partial<any>) => patch<any>(`/tests/${testId}`, testData),
   deleteUser: (userId: string) => del<any>(`/user/${userId}`),
   addUser: (userData: StudentRegisterData) => post<User>(`/user`, userData),
+  addQuestionToTest: (questionData: any) => post<any>("/questions", questionData),
+  getUserAccesses: () => get<UserAccess[]>("/user-access"),
 };
 
 // -------------------- API Export --------------------

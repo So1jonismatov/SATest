@@ -1,85 +1,73 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 interface DesmosCalculatorProps {
-  width?: number;
-  height?: number;
-  options?: any; // Desmos calculator options
+  width?: string;
+  height?: string;
+  options?: any;
 }
 
-const DesmosCalculator: React.FC<DesmosCalculatorProps> = ({ 
-  width = 600, 
-  height = 400, 
-  options = {} 
+const DesmosCalculator: React.FC<DesmosCalculatorProps> = ({
+  width = '100%',
+  height = '100%',
+  options = {},
 }) => {
-  const calculatorContainerRef = useRef<HTMLDivElement>(null);
-  const [calculator, setCalculator] = useState<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const calculatorRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadDesmos = async () => {
-      if (typeof window !== 'undefined' && window.Desmos) {
-        // Desmos is already loaded
-        if (calculatorContainerRef.current) {
-          const calc = new window.Desmos.GraphingCalculator(
-            calculatorContainerRef.current,
-            {
-              keypad: true,
-              expressions: true,
-              zoomFit: true,
-              ...options
-            }
-          );
-          setCalculator(calc);
-          setIsLoading(false);
+    const initializeCalculator = () => {
+      if (containerRef.current && window.Desmos) {
+        // If a calculator instance already exists, destroy it before creating a new one.
+        if (calculatorRef.current) {
+          calculatorRef.current.destroy();
         }
-      } else {
-        // Load Desmos script dynamically if not already loaded
-        const script = document.createElement('script');
-        script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb100becaa282e51540091770e3a79a';
-        script.async = true;
         
-        script.onload = () => {
-          if (calculatorContainerRef.current && window.Desmos) {
-            const calc = new window.Desmos.GraphingCalculator(
-              calculatorContainerRef.current,
-              {
-                keypad: true,
-                expressions: true,
-                zoomFit: true,
-                ...options
-              }
-            );
-            setCalculator(calc);
-            setIsLoading(false);
+        const calc = window.Desmos.GraphingCalculator(
+          containerRef.current,
+          {
+            keypad: true,
+            expressions: true,
+            zoomFit: true,
+            ...options,
           }
-        };
-        
-        document.head.appendChild(script);
-        
-        // Cleanup
-        return () => {
-          document.head.removeChild(script);
-        };
+        );
+        calculatorRef.current = calc;
+        setIsLoading(false);
       }
     };
 
-    loadDesmos();
-    
-    // Cleanup function
+    const scriptId = 'desmos-api-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement;
+
+    if (window.Desmos) {
+      initializeCalculator();
+    } else if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=6b57546019eb4605841473de1be06e34';
+      script.async = true;
+      document.head.appendChild(script);
+      script.onload = initializeCalculator;
+    } else {
+      script.addEventListener('load', initializeCalculator);
+    }
+
     return () => {
-      if (calculator) {
-        calculator.destroy();
+      if (calculatorRef.current) {
+        calculatorRef.current.destroy();
+        calculatorRef.current = null;
+      }
+      if (script) {
+        script.removeEventListener('load', initializeCalculator);
       }
     };
-  }, []);
+  }, [options]);
 
   return (
-    <div className="desmos-calculator-container">
+    <div className="desmos-calculator-container w-full h-full">
       {isLoading && <div className="p-4 text-center">Loading calculator...</div>}
-      <div 
-        ref={calculatorContainerRef} 
-        style={{ width: `${width}px`, height: `${height}px` }}
-      />
+      <div ref={containerRef} style={{ width, height }} />
     </div>
   );
 };

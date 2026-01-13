@@ -36,17 +36,22 @@ const TeacherPortal: React.FC = () => {
           api.teacher.getUsers(),
         ]);
 
-        setTests(testsResponse.tests);
-        setUsers(usersResponse.users);
+        const tests = testsResponse || [];
+        const users = usersResponse.users || [];
+
+        setTests(tests);
+        setUsers(users);
 
         setStats({
-          totalTests: testsResponse.totalTests,
-          premiumTests: testsResponse.tests.filter(t => t.isPremium).length,
+          totalTests: tests.length,
+          premiumTests: tests.filter(t => t.isPremium).length,
           totalStudents: usersResponse.total,
-          averageScore: Math.round(testsResponse.tests.reduce((sum, test) => sum + test.average, 0) / testsResponse.tests.length) || 0
+          averageScore: Math.round(tests.reduce((sum, test) => sum + test.average, 0) / tests.length) || 0
         });
       } catch (error) {
         console.error("Error fetching teacher portal data:", error);
+        setTests([]);
+        setUsers([]);
       }
     };
 

@@ -1,4 +1,4 @@
-import { type Question } from "@/types";
+import { type Question } from "@/api/real/types";
 import { cn } from "@/lib/utils";
 
 interface QuestionNavigationProps {
@@ -19,7 +19,7 @@ export const QuestionNavigation = ({
       <h3 className="text-lg font-semibold mb-4">Questions</h3>
       <div className="flex flex-wrap gap-2">
         {questions.map((question, index) => {
-          const isAnswered = answers[question.id] !== undefined;
+          const isAnswered = answers[question.id.toString()] !== undefined;
           const isCurrent = index === currentQuestionIndex;
 
           return (

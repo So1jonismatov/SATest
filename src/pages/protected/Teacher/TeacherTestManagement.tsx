@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { api } from "@/api/real";
-import type { TestWithAccess } from "@/api/real/types";
+import type { Test } from "@/api/real/types";
 import {
   Plus,
   Trash2,
@@ -23,17 +23,18 @@ import {
 
 const TeacherTestManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [tests, setTests] = useState<TestWithAccess[]>([]);
-  const [selectedTest, setSelectedTest] = useState<TestWithAccess | null>(null);
+  const [tests, setTests] = useState<Test[]>([]);
+  const [selectedTest, setSelectedTest] = useState<Test | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchTests = async () => {
     try {
       const response = await api.student.getTests();
-      setTests(response.tests);
+      setTests(response || []);
     } catch (error) {
       console.error("Error fetching tests:", error);
+      setTests([]);
     }
   };
 
@@ -53,9 +54,9 @@ const TeacherTestManagement: React.FC = () => {
   );
 
   // ---------- Actions ----------
-  const handleDeleteTest = async (testId: string) => {
+  const handleDeleteTest = async (testId: number) => {
     try {
-      await api.teacher.deleteTest(testId);
+      await api.teacher.deleteTest(testId.toString());
       fetchTests(); // Refresh the list of tests
     } catch (error) {
       console.error("Error deleting test:", error);
@@ -75,7 +76,7 @@ const TeacherTestManagement: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={() => navigate("/admin/tests/new/edit")}>
+            <Button onClick={() => navigate("/admin/tests/new")}>
               <Plus className="h-4 w-4 mr-2" />
               Create New Test
             </Button>
@@ -101,7 +102,7 @@ const TeacherTestManagement: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTests.map((test) => (
             <Card
-              key={test.testId}
+              key={test.id}
               className="transition-shadow hover:shadow-md"
             >
               <CardHeader>
@@ -111,10 +112,10 @@ const TeacherTestManagement: React.FC = () => {
                       {test.nomi}
                     </CardTitle>
                     <div className="text-sm text-muted-foreground mt-1">
-                      {test.subject} • {test.questionCount} questions
+                      {test.subject} • {test.savollar_soni || 0} questions
                     </div>
                   </div>
-                  {test.isPremium && (
+                  {test.is_premium && (
                     <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                       Premium
                     </span>
@@ -126,7 +127,7 @@ const TeacherTestManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{test.questionCount} questions</span>
+                    <span>{test.savollar_soni || 0} questions</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
@@ -134,13 +135,7 @@ const TeacherTestManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-muted-foreground">Avg:</span>
-                    <span className="font-medium">{test.average}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-muted-foreground">Access:</span>
-                    <span className="font-medium">
-                      {test.hasAccess ? "Yes" : "No"}
-                    </span>
+                    <span className="font-medium">{test.average || 0}</span>
                   </div>
                 </div>
 
@@ -161,7 +156,7 @@ const TeacherTestManagement: React.FC = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => navigate(`/admin/tests/${test.testId}/edit`)}
+                    onClick={() => navigate(`/admin/tests/${test.id}`)}
                   >
                     <FileText className="h-4 w-4 mr-1" />
                     Edit
@@ -170,7 +165,7 @@ const TeacherTestManagement: React.FC = () => {
                     variant="destructive"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleDeleteTest(test.testId)}
+                    onClick={() => handleDeleteTest(test.id)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     Delete
@@ -197,7 +192,7 @@ const TeacherTestManagement: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Questions:</span>{" "}
-                    {selectedTest.questionCount}
+                    {selectedTest.savollar_soni || 0}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Attempts:</span>{" "}
@@ -207,7 +202,7 @@ const TeacherTestManagement: React.FC = () => {
                     <span className="text-muted-foreground">
                       Average Score:
                     </span>{" "}
-                    {selectedTest.average}
+                    {selectedTest.average || 0}
                   </div>
                 </div>
 

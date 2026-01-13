@@ -1,269 +1,35 @@
 baseUrl: https://satbackend-production.up.railway.app
-Users:
 
-- POST /user
-creates new user 
-  body:
-    {
-    "email":"abdullohaziz559@gmail.com",
-    "password":"1234"
-     }
+## API Refactoring To-Do List
 
-- GET /user
-gets all users
-example returnval: 
-[
-    {
-        "id": 2,
-        "email": "abdullohaziz559@gmail.com",
-        "full_name": null,
-        "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
-        "role": "student",
-        "created_at": "2025-12-29T16:35:10.234Z",
-        "updated_at": "2025-12-29T16:35:10.234Z",
-        "userAccesses": [],
-        "userInfos": []
-    }
-    , ....
-]
+### 1. Update `src/api/real/index.ts` to align with the provided API endpoints and payloads:
 
--GET /user/{id}
-gets user by id
-returnval:
-{
-    "id": 2,
-    "email": "abdullohaziz559@gmail.com",
-    "full_name": null,
-    "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
-    "role": "student",
-    "created_at": "2025-12-29T16:35:10.234Z",
-    "updated_at": "2025-12-29T16:35:10.234Z",
-    "userAccesses": [],
-    "userInfos": []
-}
+- [ ] **Auth APIs:**
+    - [ ] Change `auth.register` to `POST /user`.
+    - [ ] Change `auth.login` to `POST /user/login`.
 
--PATCH /user/{id}
-updates user by id
-body can be anything like
-{
-    "full_name":"Abdullohaziz"
-}
+- [ ] **Teacher/Admin APIs:**
+    - [ ] Change `teacher.getUser` from `/admin/users/:id` to `GET /user/:id`.
+    - [ ] Change `teacher.getUsers` from `/admin/users` to `GET /user`.
+    - [ ] Change `teacher.grantAccess` from `/admin/access` to `POST /user-access`.
+    - [ ] Change `teacher.revokeAccess` from `/admin/access/:userId/:testId` to `DELETE /user-access/:id`. (Requires determining how to get the `user-access` ID for deletion).
+    - [ ] Align `teacher.createTest` payload with `POST /tests` (only `nomi`, `subject`).
+    - [ ] Align `teacher.updateTest` payload with `PATCH /tests/:id`.
+    - [ ] Align `teacher.addQuestionToTest` payload with `POST /questions` (test_id, question, type, options, correct_answer, questionImage).
 
--DELETE /user/{id}
-deletes user
+- [ ] **Student APIs:**
+    - [ ] Align `student.getTest` payload with `GET /tests/:id` and handle its return structure (e.g., `userAccesses` and `userInfos`).
+    - [ ] Align `student.getTests` payload with `GET /tests`.
 
-Questions:
-- POST /questions
-adds new question to the database
-{
-	test_id:
-	questionImage
-	question:
-	type:
-	options:
-	correct_answer:
-}
--GET /questions
-gets all questions
+### 2. Refactor frontend components to align with updated API payloads:
 
-TESTS:
--GET /tests
-[
-    {
-        "id": 1,
-        "nomi": "sentiyabrda tushgan savollar",
-        "subject": "Math",
-        "savollar_soni": 2,
-        "is_premium": false,
-        "jami_urinishlar": 10,
-        "average": 180,
-        "created_at": "2025-12-29T16:38:44.730Z",
-        "updated_at": "2025-12-29T16:41:27.668Z",
-        "questions": [],
-        "userAccesses": [],
-        "userInfos": []
-    }
-    ,...
-]
+- [ ] **`TestCreationPage.tsx`:**
+    - [ ] Adjust the `testData` state and `handleSaveTest` to match the `POST /tests` payload (only `nomi` and `subject` are sent on creation; `savollar_soni`, `is_premium`, `jami_urinishlar` are not sent on initial creation).
 
--PATCH /tests/{id}
-body:
-{
-    "savollar_soni": 2,
-    "average": 180,
-    "jami_urinishlar": 10
-}
-returnval
-{
-    "id": 1,
-    "nomi": "sentiyabrda tushgan savollar",
-    "subject": "Math",
-    "savollar_soni": 2,
-    "is_premium": false,
-    "jami_urinishlar": 10,
-    "average": 180,
-    "created_at": "2025-12-29T16:38:44.730Z",
-    "updated_at": "2025-12-29T16:41:27.668Z",
-    "questions": [],
-    "userAccesses": [
-        {
-            "id": 6,
-            "user_id": 2,
-            "test_id": 1,
-            "created_at": "2026-01-04T16:23:46.659Z"
-        }
-    ],
-    "userInfos": []
-}
+- [ ] **`TestEditPage.tsx`:**
+    - [ ] Adjust the `useEffect` fetch for `api.student.getTest` to handle the new return structure from `GET /tests/:id`.
+    - [ ] Modify `handleSaveQuestions` to ensure the `POST /questions` payload is correct (especially `options` format as an object and `correct_answer` as an object).
 
--GET /tests/{id}
-returnval:
-{
-    "id": 1,
-    "nomi": "sentiyabrda tushgan savollar",
-    "subject": "Math",
-    "savollar_soni": 2,
-    "is_premium": false,
-    "jami_urinishlar": 10,
-    "average": 180,
-    "created_at": "2025-12-29T16:38:44.730Z",
-    "updated_at": "2025-12-29T16:41:27.668Z",
-    "questions": [],
-    "userAccesses": [
-        {
-            "id": 6,
-            "user_id": 2,
-            "test_id": 1,
-            "created_at": "2026-01-04T16:23:46.659Z"
-        }
-    ],
-    "userInfos": []
-}
+### 3. Review and potentially update `types.ts` in `src/api/real/` to reflect new API response structures.
 
--POST /tests
-{
-    "nomi": "sentiyabrda tushgan savollar",
-    "subject":"Math"
-}
-returnval:
-
-{
-    "is_premium": false,
-    "jami_urinishlar": 0,
-    "id": 2,
-    "nomi": "sentiyabrda tushgan savollar",
-    "subject": "Math",
-    "savollar_soni": null,
-    "average": null
-}
-
-
-user-access:
--POST /user-access
-body:
-{
-  "user_id": 2,
-  "test_id": 1
-}
-gives user access to the test
-returnval:
-{
-    "id": 7,
-    "user_id": 2,
-    "test_id": 1,
-    "created_at": "2026-01-04T16:53:18.622Z"
-}
--GET /user-acess
-gets all user acess
-returnval:
-[
-    {
-        "id": 7,
-        "user_id": 2,
-        "test_id": 1,
-        "created_at": "2026-01-04T16:53:18.622Z",
-        "user": {
-            "id": 2,
-            "email": "abdullohaziz559@gmail.com",
-            "full_name": "Sobir",
-            "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
-            "role": "student",
-            "created_at": "2025-12-29T16:35:10.234Z",
-            "updated_at": "2026-01-04T16:22:14.067Z"
-        },
-        "test": {
-            "id": 1,
-            "nomi": "sentiyabrda tushgan savollar",
-            "subject": "Math",
-            "savollar_soni": 2,
-            "is_premium": false,
-            "jami_urinishlar": 10,
-            "average": 180,
-            "created_at": "2025-12-29T16:38:44.730Z",
-            "updated_at": "2025-12-29T16:41:27.668Z"
-        }
-    },
-    {
-        "id": 6,
-        "user_id": 2,
-        "test_id": 1,
-        "created_at": "2026-01-04T16:23:46.659Z",
-        "user": {
-            "id": 2,
-            "email": "abdullohaziz559@gmail.com",
-            "full_name": "Sobir",
-            "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
-            "role": "student",
-            "created_at": "2025-12-29T16:35:10.234Z",
-            "updated_at": "2026-01-04T16:22:14.067Z"
-        },
-        "test": {
-            "id": 1,
-            "nomi": "sentiyabrda tushgan savollar",
-            "subject": "Math",
-            "savollar_soni": 2,
-            "is_premium": false,
-            "jami_urinishlar": 10,
-            "average": 180,
-            "created_at": "2025-12-29T16:38:44.730Z",
-            "updated_at": "2025-12-29T16:41:27.668Z"
-        }
-    }
-]
-
--GET /user-acess/{id}
-gets specific user acesss
-return val:
-{
-    "id": 7,
-    "user_id": 2,
-    "test_id": 1,
-    "created_at": "2026-01-04T16:53:18.622Z",
-    "user": {
-        "id": 2,
-        "email": "abdullohaziz559@gmail.com",
-        "full_name": "Sobir",
-        "password": "$2b$10$EvH3G9piHSdv8iXr/0UeNukqtN.NUPlYbIRnOrPaSIsxvSwWfDbfe",
-        "role": "student",
-        "created_at": "2025-12-29T16:35:10.234Z",
-        "updated_at": "2026-01-04T16:22:14.067Z"
-    },
-    "test": {
-        "id": 1,
-        "nomi": "sentiyabrda tushgan savollar",
-        "subject": "Math",
-        "savollar_soni": 2,
-        "is_premium": false,
-        "jami_urinishlar": 10,
-        "average": 180,
-        "created_at": "2025-12-29T16:38:44.730Z",
-        "updated_at": "2025-12-29T16:41:27.668Z"
-    }
-}
-
--DELETE /user-access/{id}
-deletes user acess
-returnval:
-{
-    "message": "UserAccess deleted successfully"
-}
+### 4. Remove any "New Request" placeholders or unused API functions if they are not needed.

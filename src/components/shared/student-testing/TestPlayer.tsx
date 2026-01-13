@@ -1,4 +1,4 @@
-import type { Test } from "@/types/index";
+import type { TestWithAccess } from "@/api/real/types";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import MathTextRenderer from "@/components/shared/math/MathTextRenderer";
 import DesmosCalculator from "@/components/shared/math/DesmosCalculator";
 
 interface TestPlayerProps {
-  test: Test;
+  test: TestWithAccess;
   onSubmit: (
     answers: { questionId: string; answeredId: string }[],
   ) => Promise<void>;
@@ -32,25 +32,7 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
   const [showCalculator, setShowCalculator] = useState(
     test.subject === "mathematics",
   );
-  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
 
-  useEffect(() => {
-    const updateScreenSize = () => {
-      setScreenSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    // Set initial size
-    updateScreenSize();
-
-    // Add event listener
-    window.addEventListener("resize", updateScreenSize);
-
-    // Cleanup
-    return () => window.removeEventListener("resize", updateScreenSize);
-  }, []);
 
   const handleFinishTest = async () => {
     if (isSubmitting) return;
@@ -104,7 +86,7 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
   };
 
   const currentQuestion = test.questions[currentQuestionIndex];
-  const selectedAnswer = answers[currentQuestion.id];
+  const selectedAnswer = answers[currentQuestion.id.toString()];
 
   return (
     <div className="relative flex w-full flex-col gap-6 self-center items-center">
@@ -188,38 +170,26 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
         <Card className="flex flex-col w-full">
           <CardHeader>
             <CardTitle className="text-lg md:text-xl">
-              <MathTextRenderer text={currentQuestion.text} />
+              <MathTextRenderer text={currentQuestion.question} />
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-grow">
             <div className="flex flex-col gap-4">
-              {currentQuestion.imageUrl && (
-                <div className="w-full">
-                  <img
-                    src={currentQuestion.imageUrl}
-                    alt="Question illustration"
-                    className="rounded-lg object-contain max-h-60 w-full"
-                  />
-                </div>
-              )}
+
               <div className="w-full">
                 <div className="space-y-3">
-                  {(
-                    currentQuestion.answers ||
-                    currentQuestion.options ||
-                    []
-                  ).map((answer) => (
+                  {Object.entries(currentQuestion.options).map(([optionKey, optionText]) => (
                     <div
-                      key={answer.id}
+                      key={optionKey}
                       onClick={() =>
                         !isSubmitting &&
                         handleAnswerSelect(
-                          currentQuestion.id,
-                          answer.id,
+                          currentQuestion.id.toString(),
+                          optionKey,
                         )
                       }
                       className={`flex items-start p-3 sm:p-4 border rounded-md transition-colors ${
-                        selectedAnswer === answer.id
+                        selectedAnswer === optionKey
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-accent"
                       } ${isSubmitting ? "cursor-not-allowed" : "cursor-pointer"}`}
@@ -227,19 +197,19 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
                       <input
                         type="radio"
                         name={`question-${currentQuestion.id}`}
-                        value={answer.id}
-                        checked={selectedAnswer === answer.id}
+                        value={optionKey}
+                        checked={selectedAnswer === optionKey}
                         onChange={() =>
                           handleAnswerSelect(
-                            currentQuestion.id,
-                            answer.id,
+                            currentQuestion.id.toString(),
+                            optionKey,
                           )
                         }
                         disabled={isSubmitting}
                         className="mt-1 mr-3 sm:mr-4 h-4 w-4 accent-primary"
                       />
                       <span className="flex-1 text-sm sm:text-base">
-                        <MathTextRenderer text={answer.text} />
+                        <MathTextRenderer text={optionText} />
                       </span>
                     </div>
                   ))}
@@ -262,10 +232,7 @@ export const TestPlayer = ({ test, onSubmit }: TestPlayerProps) => {
             </CardHeader>
             <CardContent>
               <div className="w-full h-96">
-                <DesmosCalculator
-                  width={screenSize.width > 768 ? 800 : screenSize.width - 40}
-                  height={screenSize.width > 768 ? 350 : 250}
-                />
+                <DesmosCalculator />
               </div>
             </CardContent>
           </Card>

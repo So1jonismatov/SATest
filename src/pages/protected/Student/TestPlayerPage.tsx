@@ -5,11 +5,13 @@ import { api } from "@/api/real";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 
+import { type TestWithAccess } from "@/api/real/types";
+
 const TestPlayerPage = () => {
   const { testId } = useParams<{ testId: string }>();
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [test, setTest] = useState<any | undefined>(undefined); // Using any to access additional properties
+  const [test, setTest] = useState<TestWithAccess | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,6 +115,22 @@ const TestPlayerPage = () => {
           <h2 className="text-2xl font-bold mb-4">Test Not Found</h2>
           <p className="mb-6 text-muted-foreground">
             The test you're looking for doesn't exist or may have been removed.
+          </p>
+          <Button onClick={() => navigate('/')}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!test.questions || test.questions.length === 0) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold mb-4">No Questions Found</h2>
+          <p className="mb-6 text-muted-foreground">
+            This test does not have any questions yet. Please check back later.
           </p>
           <Button onClick={() => navigate('/')}>
             Go to Dashboard

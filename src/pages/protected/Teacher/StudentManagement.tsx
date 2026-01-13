@@ -21,20 +21,23 @@ import {
   Users,
   CheckCircle,
 } from "lucide-react";
-import type { UserWithAccessList, TestWithAccess } from "@/api/real/types";
+import type { User, Test, UserAccess } from "@/api/real/types";
 import { api } from "@/api/real";
-import { mapApiUserToUserWithAccessList } from "@/function/Teacher/user-mapper";
+
+
+type StudentWithAccess = User & { access_list: number[] };
 
 const StudentManagement: React.FC = () => {
   const { user } = useAuth();
-  const [students, setStudents] = useState<UserWithAccessList[]>([]);
-  const [tests, setTests] = useState<TestWithAccess[]>([]);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+  const [students, setStudents] = useState<StudentWithAccess[]>([]);
+  const [tests, setTests] = useState<Test[]>([]);
+  const [userAccesses, setUserAccesses] = useState<UserAccess[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
     null,
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
   const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
     full_name: "",
@@ -51,13 +54,27 @@ const StudentManagement: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const studentsData = await api.teacher.getUsers();
-        const testsData = await api.student.getTests();
+        const [studentsData, testsData, userAccessesData] = await Promise.all([
+          api.teacher.getUsers(),
+          api.student.getTests(),
+          api.teacher.getUserAccesses(),
+        ]);
 
-        setStudents(studentsData.users);
-        setTests(testsData.tests);
+        const studentsWithAccess = studentsData.map(student => ({
+          ...student,
+          access_list: userAccessesData
+            .filter(access => access.user_id === student.id)
+            .map(access => access.test_id),
+        }));
+
+        setStudents(studentsWithAccess);
+        setTests(testsData || []);
+        setUserAccesses(userAccessesData || []);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setStudents([]);
+        setTests([]);
+        setUserAccesses([]);
       }
     };
 
@@ -68,15 +85,15 @@ const StudentManagement: React.FC = () => {
   const filteredStudents = useMemo(() => {
     return students.filter(
       (student) =>
-        student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.email.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [students, searchTerm]);
 
   // Handle access toggle for a specific test with optimistic updates
   const handleAccessToggle = async (
-    studentId: string,
-    testId: string,
+    studentId: number,
+    testId: number,
     currentlyHasAccess: boolean,
   ) => {
     // Optimistically update the UI
@@ -96,11 +113,22 @@ const StudentManagement: React.FC = () => {
     try {
       if (currentlyHasAccess) {
         // Revoke access
-        await api.teacher.revokeAccess({ userId: studentId, testId, accessLevel: "student" });
+        const access = userAccesses.find(
+          (ua) => ua.user_id === studentId && ua.test_id === testId,
+        );
+        if (access && access.id) {
+          await api.teacher.revokeAccess(access.id.toString());
+        }
       } else {
         // Grant access
-        await api.teacher.grantAccess({ userId: studentId, testId, accessLevel: "student" });
+        await api.teacher.grantAccess({
+          user_id: studentId,
+          test_id: testId,
+        });
       }
+      // Refetch user accesses to get the updated list
+      const userAccessesData = await api.teacher.getUserAccesses();
+      setUserAccesses(userAccessesData || []);
     } catch (error) {
       // If API call fails, revert the optimistic update
       setStudents((prev) =>
@@ -120,29 +148,32 @@ const StudentManagement: React.FC = () => {
   };
 
   // Handle granting all access
-  const handleGrantAllAccess = async (studentId: string) => {
+  const handleGrantAllAccess = async (studentId: number) => {
     try {
       const grantPromises = tests.map((test) =>
-        api.teacher.grantAccess({ userId: studentId, testId: test.testId, accessLevel: "student" }),
+        api.teacher.grantAccess({ user_id: studentId, test_id: test.id }),
       );
       await Promise.all(grantPromises);
       setStudents((prev) =>
         prev.map((student) =>
           student.id === studentId
-            ? { ...student, access_list: tests.map((t) => t.testId) }
+            ? { ...student, access_list: tests.map((t) => t.id) }
             : student,
         ),
       );
+      const userAccessesData = await api.teacher.getUserAccesses();
+      setUserAccesses(userAccessesData || []);
     } catch (error) {
       console.error("Error granting all access:", error);
     }
   };
 
   // Handle revoking all access
-  const handleRevokeAllAccess = async (studentId: string) => {
+  const handleRevokeAllAccess = async (studentId: number) => {
     try {
-      const revokePromises = tests.map((test) =>
-        api.teacher.revokeAccess({ userId: studentId, testId: test.testId, accessLevel: "student" }),
+      const accessesToRevoke = userAccesses.filter(ua => ua.user_id === studentId);
+      const revokePromises = accessesToRevoke.map((access) =>
+        api.teacher.revokeAccess(access.id!.toString()),
       );
       await Promise.all(revokePromises);
       setStudents((prev) =>
@@ -150,6 +181,8 @@ const StudentManagement: React.FC = () => {
           student.id === studentId ? { ...student, access_list: [] } : student,
         ),
       );
+      const userAccessesData = await api.teacher.getUserAccesses();
+      setUserAccesses(userAccessesData || []);
     } catch (error) {
       console.error("Error revoking all access:", error);
     }
@@ -159,7 +192,7 @@ const StudentManagement: React.FC = () => {
     if (!studentToDelete) return;
 
     try {
-      await api.teacher.deleteUser(studentToDelete);
+      await api.teacher.deleteUser(studentToDelete.toString());
       setStudents((prev) =>
         prev.filter((student) => student.id !== studentToDelete),
       );
@@ -180,7 +213,10 @@ const StudentManagement: React.FC = () => {
         role: "student",
       });
 
-      const addedStudent = mapApiUserToUserWithAccessList(addedApiUser);
+      const addedStudent: StudentWithAccess = {
+        ...addedApiUser,
+        access_list: [],
+      };
 
       setStudents([...students, addedStudent]);
       setIsAddStudentDialogOpen(false);
@@ -378,29 +414,29 @@ const StudentManagement: React.FC = () => {
                   <div className="space-y-3">
                     {tests.map((test) => (
                       <div
-                        key={test.testId}
+                        key={test.id}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
                         <div>
                           <h4 className="font-medium">{test.nomi}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {test.subject} • {test.questionCount} questions
+                            {test.subject} • {test.savollar_soni || 0} questions
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {test.isPremium && (
+                          {test.is_premium && (
                             <Badge variant="secondary">Premium</Badge>
                           )}
                           <Checkbox
                             checked={selectedStudent.access_list.includes(
-                              test.testId,
+                              test.id,
                             )}
                             onCheckedChange={() =>
                               handleAccessToggle(
                                 selectedStudent.id,
-                                test.testId,
+                                test.id,
                                 selectedStudent.access_list.includes(
-                                  test.testId,
+                                  test.id,
                                 ), // Current state before change
                               )
                             }
